@@ -61,13 +61,17 @@ QFrame *createCloudTranslateCard(QWidget *parent, CloudTranslateCardWidgets *wid
     widgets->geminiApiKey =
         addSecretRow(form, MS_TR("Gemini API Key"), QStringLiteral("GEMINI_API_KEY"));
     widgets->geminiModel =
-        addTextRow(form, MS_TR("Gemini Model"), QStringLiteral("gemini-1.5-flash"));
+        addTextRow(form, MS_TR("Gemini Model"), QStringLiteral("gemini-2.5-flash"));
+    widgets->geminiEndpoint =
+        addTextRow(form, MS_TR("Gemini Endpoint"), QStringLiteral("https://generativelanguage.googleapis.com"));
 
     // 5. Anthropic Claude
     widgets->anthropicApiKey =
         addSecretRow(form, MS_TR("Anthropic API Key"), QStringLiteral("ANTHROPIC_API_KEY"));
     widgets->anthropicModel =
         addTextRow(form, MS_TR("Anthropic Model"), QStringLiteral("claude-3-5-haiku-20241022"));
+    widgets->anthropicEndpoint =
+        addTextRow(form, MS_TR("Anthropic Endpoint"), QStringLiteral("https://api.anthropic.com"));
     return card;
 }
 
@@ -101,11 +105,17 @@ void applyCloudTranslateSettings(const CloudTranslateCardWidgets &widgets,
     if (widgets.geminiModel) {
         widgets.geminiModel->setText(settings.geminiModel);
     }
+    if (widgets.geminiEndpoint) {
+        widgets.geminiEndpoint->setText(settings.geminiEndpoint);
+    }
     if (widgets.anthropicApiKey) {
         widgets.anthropicApiKey->setText(settings.anthropicApiKey);
     }
     if (widgets.anthropicModel) {
         widgets.anthropicModel->setText(settings.anthropicModel);
+    }
+    if (widgets.anthropicEndpoint) {
+        widgets.anthropicEndpoint->setText(settings.anthropicEndpoint);
     }
 }
 
@@ -142,11 +152,17 @@ void collectCloudTranslateSettings(const CloudTranslateCardWidgets &widgets,
     if (widgets.geminiModel) {
         settings->geminiModel = widgets.geminiModel->text().trimmed();
     }
+    if (widgets.geminiEndpoint) {
+        settings->geminiEndpoint = widgets.geminiEndpoint->text().trimmed();
+    }
     if (widgets.anthropicApiKey) {
         settings->anthropicApiKey = widgets.anthropicApiKey->text().trimmed();
     }
     if (widgets.anthropicModel) {
         settings->anthropicModel = widgets.anthropicModel->text().trimmed();
+    }
+    if (widgets.anthropicEndpoint) {
+        settings->anthropicEndpoint = widgets.anthropicEndpoint->text().trimmed();
     }
 }
 

@@ -23,8 +23,10 @@ struct CloudTranslateSettings {
     QString youdaoAppSecret;
     QString geminiApiKey;
     QString geminiModel;
+    QString geminiEndpoint;
     QString anthropicApiKey;
     QString anthropicModel;
+    QString anthropicEndpoint;
 };
 
 /**

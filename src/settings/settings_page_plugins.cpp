@@ -24,60 +24,6 @@ namespace markshot::settings {
 namespace {
 
 /**
- * 填充 provider 下拉框。
- * @param combo 下拉框控件。
- * @param capability 插件能力。
- * @return 无返回值。
- */
-void populateProviderCombo(QComboBox *combo, providers::ProviderPluginCapability capability)
-{
-    if (!combo) {
-        return;
-    }
-    combo->clear();
-    const QVector<ProviderOption> options = providerOptionsForCapability(capability);
-    for (const ProviderOption &option : options) {
-        combo->addItem(option.label, option.value);
-    }
-}
-
-/**
- * 设置 provider 下拉框当前值。
- * @param combo 下拉框控件。
- * @param value provider 配置值。
- * @return 无返回值。
- */
-void setProviderComboValue(QComboBox *combo, const QString &value)
-{
-    if (!combo) {
-        return;
-    }
-    const QString normalized = value.trimmed().isEmpty()
-        ? QStringLiteral("auto")
-        : value.trimmed().toLower();
-    int index = combo->findData(normalized);
-    if (index < 0) {
-        combo->addItem(QStringLiteral("%1: %2").arg(MS_TR("Custom"), normalized), normalized);
-        index = combo->count() - 1;
-    }
-    combo->setCurrentIndex(index);
-}
-
-/**
- * 读取 provider 下拉框当前值。
- * @param combo 下拉框控件。
- * @return provider 配置值。
- */
-QString providerComboValue(const QComboBox *combo)
-{
-    if (!combo || combo->currentIndex() < 0) {
-        return QStringLiteral("auto");
-    }
-    const QString value = combo->currentData().toString().trimmed().toLower();
-    return value.isEmpty() ? QStringLiteral("auto") : value;
-}
-
-/**
  * 读取非空展示文本。
  * @param text 原始文本。
  * @param fallback 兜底文本。
@@ -242,6 +188,20 @@ void SettingsPagePlugins::updateConfig(SettingsConfig *config) const
     config->integrations.codeScanProvider = providerComboValue(m_codeScanProvider);
 }
 
+void SettingsPagePlugins::setTranslationProvider(const QString &provider)
+{
+    m_updatingProviderFromSignal = true;
+    setProviderComboValue(m_translationProvider, provider);
+    m_updatingProviderFromSignal = false;
+}
+
+void SettingsPagePlugins::setOcrProvider(const QString &provider)
+{
+    m_updatingProviderFromSignal = true;
+    setProviderComboValue(m_ocrProvider, provider);
+    m_updatingProviderFromSignal = false;
+}
+
 void SettingsPagePlugins::buildProviderCard(QVBoxLayout *layout)
 {
     QFrame *card = createSettingsCard(MS_TR("Plugin Providers"),
@@ -255,6 +215,18 @@ void SettingsPagePlugins::buildProviderCard(QVBoxLayout *layout)
     populateProviderCombo(m_ocrProvider, providers::ProviderPluginCapability::Ocr);
     populateProviderCombo(m_translationProvider, providers::ProviderPluginCapability::Translation);
     populateProviderCombo(m_codeScanProvider, providers::ProviderPluginCapability::CodeScan);
+
+    connect(m_ocrProvider, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
+        if (!m_updatingProviderFromSignal) {
+            emit ocrProviderChanged(providerComboValue(m_ocrProvider));
+        }
+    });
+    connect(m_translationProvider, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
+        if (!m_updatingProviderFromSignal) {
+            emit translationProviderChanged(providerComboValue(m_translationProvider));
+        }
+    });
+
     layout->addWidget(card);
 }
 

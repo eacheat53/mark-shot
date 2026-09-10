@@ -20,6 +20,8 @@ class PluginMarketplaceClient;
 namespace markshot::settings {
 
 class SettingsPagePlugins final : public QWidget {
+    Q_OBJECT
+
 public:
     /// @brief 创建插件管理设置页。
     /// @param parent 父控件。
@@ -32,6 +34,18 @@ public:
     /// @brief 将页面控件值写回配置。
     /// @param config 需要更新的设置配置。
     void updateConfig(SettingsConfig *config) const;
+
+signals:
+    /// @brief 翻译提供方变更信号。
+    void translationProviderChanged(const QString &provider);
+    /// @brief OCR 提供方变更信号。
+    void ocrProviderChanged(const QString &provider);
+
+public slots:
+    /// @brief 同步翻译提供方。
+    void setTranslationProvider(const QString &provider);
+    /// @brief 同步 OCR 提供方。
+    void setOcrProvider(const QString &provider);
 
 private:
     /// @brief 构建 provider 选择卡片。
@@ -107,6 +121,8 @@ private:
     QLabel *m_ocrModelStatus = nullptr;
     QPushButton *m_ocrModelDownloadButton = nullptr;
     int m_ocrModelQueueIndex = -1;
+
+    bool m_updatingProviderFromSignal = false;
 };
 
 }  // namespace markshot::settings

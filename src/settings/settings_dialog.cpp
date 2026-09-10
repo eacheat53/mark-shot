@@ -139,6 +139,16 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     connect(saveButton, &QPushButton::clicked, this, [this] { saveConfig(true); });
     connect(cancelButton, &QPushButton::clicked, this, &QDialog::close);
 
+    // 3. "集成"页与"插件"页双向同步 OCR 与翻译服务商选择
+    connect(m_integrationsPage, &SettingsPageIntegrations::translationProviderChanged,
+            m_pluginsPage, &SettingsPagePlugins::setTranslationProvider);
+    connect(m_pluginsPage, &SettingsPagePlugins::translationProviderChanged,
+            m_integrationsPage, &SettingsPageIntegrations::setTranslationProvider);
+    connect(m_integrationsPage, &SettingsPageIntegrations::ocrProviderChanged,
+            m_pluginsPage, &SettingsPagePlugins::setOcrProvider);
+    connect(m_pluginsPage, &SettingsPagePlugins::ocrProviderChanged,
+            m_integrationsPage, &SettingsPageIntegrations::setOcrProvider);
+
     m_navigation->setCurrentLogicalRow(0);
     loadConfig();
 }

@@ -218,7 +218,33 @@ QString lightSettingsStyleSheet()
         "}"
         "QScrollBar::handle:vertical:hover { background: #94A3B8; }"
         "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
-        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }");
+        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }"
+
+        // 标签页控件
+        "QTabWidget::pane {"
+        " background: #FFFFFF;"
+        " border: 1px solid #CBD5E1;"
+        " border-radius: 10px;"
+        " margin-top: -1px;"
+        " padding: 12px;"
+        "}"
+        "QTabBar::tab {"
+        " background: #F1F5F9;"
+        " color: #64748B;"
+        " border: 1px solid #CBD5E1;"
+        " border-bottom: 0;"
+        " border-top-left-radius: 8px;"
+        " border-top-right-radius: 8px;"
+        " padding: 6px 14px;"
+        " font-weight: 700;"
+        " margin-right: 4px;"
+        "}"
+        "QTabBar::tab:hover { color: #0F172A; background: #E2E8F0; }"
+        "QTabBar::tab:selected {"
+        " color: #0F766E;"
+        " background: #FFFFFF;"
+        " border-color: #CBD5E1;"
+        "}");
 }
 
 }  // namespace
@@ -439,7 +465,33 @@ QString settingsStyleSheet()
         "}"
         "QScrollBar::handle:vertical:hover { background: #475569; }"
         "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
-        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }");
+        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }"
+
+        // 标签页控件
+        "QTabWidget::pane {"
+        " background: #0B1220;"
+        " border: 1px solid #1E293B;"
+        " border-radius: 10px;"
+        " margin-top: -1px;"
+        " padding: 12px;"
+        "}"
+        "QTabBar::tab {"
+        " background: #1E293B;"
+        " color: #94A3B8;"
+        " border: 1px solid #334155;"
+        " border-bottom: 0;"
+        " border-top-left-radius: 8px;"
+        " border-top-right-radius: 8px;"
+        " padding: 6px 14px;"
+        " font-weight: 700;"
+        " margin-right: 4px;"
+        "}"
+        "QTabBar::tab:hover { color: #F1F5F9; background: #334155; }"
+        "QTabBar::tab:selected {"
+        " color: #2DD4BF;"
+        " background: #0B1220;"
+        " border-color: #1E293B;"
+        "}");
 }
 
 QString settingsStyleSheet(markshot::ui::UiThemeMode mode)

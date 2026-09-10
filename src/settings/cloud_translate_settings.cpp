@@ -37,8 +37,10 @@ CloudTranslateSettings readCloudTranslateSettings(const QJsonObject &translation
     settings.youdaoAppSecret = vendorString(translation, QStringLiteral("youdao"), QStringLiteral("appSecret"));
     settings.geminiApiKey = vendorString(translation, QStringLiteral("gemini"), QStringLiteral("apiKey"));
     settings.geminiModel = vendorString(translation, QStringLiteral("gemini"), QStringLiteral("model"));
+    settings.geminiEndpoint = vendorString(translation, QStringLiteral("gemini"), QStringLiteral("endpoint"));
     settings.anthropicApiKey = vendorString(translation, QStringLiteral("anthropic"), QStringLiteral("apiKey"));
     settings.anthropicModel = vendorString(translation, QStringLiteral("anthropic"), QStringLiteral("model"));
+    settings.anthropicEndpoint = vendorString(translation, QStringLiteral("anthropic"), QStringLiteral("endpoint"));
     return settings;
 }
 
@@ -60,8 +62,10 @@ QVector<QPair<QStringList, QString>> cloudTranslateConfigEntries(const CloudTran
         {{translation, youdao, QStringLiteral("appSecret")}, settings.youdaoAppSecret.trimmed()},
         {{translation, gemini, QStringLiteral("apiKey")}, settings.geminiApiKey.trimmed()},
         {{translation, gemini, QStringLiteral("model")}, settings.geminiModel.trimmed()},
+        {{translation, gemini, QStringLiteral("endpoint")}, settings.geminiEndpoint.trimmed()},
         {{translation, anthropic, QStringLiteral("apiKey")}, settings.anthropicApiKey.trimmed()},
         {{translation, anthropic, QStringLiteral("model")}, settings.anthropicModel.trimmed()},
+        {{translation, anthropic, QStringLiteral("endpoint")}, settings.anthropicEndpoint.trimmed()},
     };
 }
 
