@@ -64,7 +64,7 @@ Credentials for the three cloud services live in per-vendor sub-objects under `t
     },
     "gemini": {
       "apiKey": "",
-      "model": "gemini-3.5-flash-lite",
+      "model": "gemini-2.5-flash",
       "endpoint": "https://generativelanguage.googleapis.com/v1beta",
       "timeoutMs": 60000
     },
@@ -83,7 +83,7 @@ Credentials for the three cloud services live in per-vendor sub-objects under `t
 | Field | Environment variables (in order) | Default |
 | :--- | :--- | :--- |
 | `apiKey` | `GEMINI_API_KEY`, `MARK_SHOT_GEMINI_API_KEY` | none, required |
-| `model` | `GEMINI_MODEL`, `MARK_SHOT_GEMINI_MODEL` | `gemini-3.5-flash-lite` |
+| `model` | `GEMINI_MODEL`, `MARK_SHOT_GEMINI_MODEL` | `gemini-2.5-flash` |
 | `endpoint` | `GEMINI_API_BASE`, `MARK_SHOT_GEMINI_API_BASE` | `https://generativelanguage.googleapis.com/v1beta` |
 | `timeoutMs` | none | `60000` |
 

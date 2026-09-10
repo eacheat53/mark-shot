@@ -58,7 +58,14 @@ QUrl buildGeminiUrl(QString endpoint, const QString &model)
     while (endpoint.endsWith(QLatin1Char('/'))) {
         endpoint.chop(1);
     }
-    return QUrl(QStringLiteral("%1/models/%2:generateContent").arg(endpoint, model));
+    if (!endpoint.contains(QStringLiteral("/v1"))) {
+        endpoint += QStringLiteral("/v1beta");
+    }
+    QString modelName = model.trimmed();
+    if (modelName.startsWith(QStringLiteral("models/"))) {
+        modelName = modelName.mid(7);
+    }
+    return QUrl(QStringLiteral("%1/models/%2:generateContent").arg(endpoint, modelName));
 }
 
 QByteArray buildGeminiPayload(const GeminiTranslateConfig &config,
