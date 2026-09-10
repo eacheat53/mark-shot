@@ -19,6 +19,10 @@ struct CloudTranslateCardWidgets {
     QLineEdit *baiduAppKey = nullptr;
     QLineEdit *youdaoAppKey = nullptr;
     QLineEdit *youdaoAppSecret = nullptr;
+    QLineEdit *geminiApiKey = nullptr;
+    QLineEdit *geminiModel = nullptr;
+    QLineEdit *anthropicApiKey = nullptr;
+    QLineEdit *anthropicModel = nullptr;
 };
 
 /**

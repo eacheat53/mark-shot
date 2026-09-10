@@ -35,6 +35,10 @@ CloudTranslateSettings readCloudTranslateSettings(const QJsonObject &translation
     settings.baiduAppKey = vendorString(translation, QStringLiteral("baidu"), QStringLiteral("appKey"));
     settings.youdaoAppKey = vendorString(translation, QStringLiteral("youdao"), QStringLiteral("appKey"));
     settings.youdaoAppSecret = vendorString(translation, QStringLiteral("youdao"), QStringLiteral("appSecret"));
+    settings.geminiApiKey = vendorString(translation, QStringLiteral("gemini"), QStringLiteral("apiKey"));
+    settings.geminiModel = vendorString(translation, QStringLiteral("gemini"), QStringLiteral("model"));
+    settings.anthropicApiKey = vendorString(translation, QStringLiteral("anthropic"), QStringLiteral("apiKey"));
+    settings.anthropicModel = vendorString(translation, QStringLiteral("anthropic"), QStringLiteral("model"));
     return settings;
 }
 
@@ -44,6 +48,8 @@ QVector<QPair<QStringList, QString>> cloudTranslateConfigEntries(const CloudTran
     const QString tencent = QStringLiteral("tencent");
     const QString baidu = QStringLiteral("baidu");
     const QString youdao = QStringLiteral("youdao");
+    const QString gemini = QStringLiteral("gemini");
+    const QString anthropic = QStringLiteral("anthropic");
     return {
         {{translation, tencent, QStringLiteral("secretId")}, settings.tencentSecretId.trimmed()},
         {{translation, tencent, QStringLiteral("secretKey")}, settings.tencentSecretKey.trimmed()},
@@ -52,6 +58,10 @@ QVector<QPair<QStringList, QString>> cloudTranslateConfigEntries(const CloudTran
         {{translation, baidu, QStringLiteral("appKey")}, settings.baiduAppKey.trimmed()},
         {{translation, youdao, QStringLiteral("appKey")}, settings.youdaoAppKey.trimmed()},
         {{translation, youdao, QStringLiteral("appSecret")}, settings.youdaoAppSecret.trimmed()},
+        {{translation, gemini, QStringLiteral("apiKey")}, settings.geminiApiKey.trimmed()},
+        {{translation, gemini, QStringLiteral("model")}, settings.geminiModel.trimmed()},
+        {{translation, anthropic, QStringLiteral("apiKey")}, settings.anthropicApiKey.trimmed()},
+        {{translation, anthropic, QStringLiteral("model")}, settings.anthropicModel.trimmed()},
     };
 }
 
