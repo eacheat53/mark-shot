@@ -27,8 +27,10 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(6);
+    // 1. 【OCR】【分区高度】根据进度和提示的实际高度更新最小尺寸，避免挤压编辑器
+    layout->setSizeConstraint(QLayout::SetMinimumSize);
 
-    // 1. 【OCR】【文本分区】将复制入口与所属文本放在同一分区
+    // 2. 【OCR】【文本分区】将复制入口与所属文本放在同一分区
     auto *header = new QHBoxLayout;
     header->setSpacing(6);
     auto *label = new QLabel(title, this);
@@ -45,7 +47,7 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     header->addWidget(m_copyButton);
     layout->addLayout(header);
 
-    // 2. 【OCR】【文本编辑】保持纯文本和原有换行，长行在窗口内自动折行
+    // 3. 【OCR】【文本编辑】保持纯文本和原有换行，长行在窗口内自动折行
     m_editor = new QTextEdit(this);
     m_editor->setAcceptRichText(false);
     m_editor->setAccessibleName(title);

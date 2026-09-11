@@ -187,9 +187,8 @@ void OcrResultWindow::finishTranslation(markshot::providers::ProviderTask *task,
     if (result.ok && document.isObject()) {
         const QJsonObject root = document.object();
         for (const QJsonValue &value : root.value(QStringLiteral("tokens")).toArray()) {
-            const QString line = value.toObject().value(QStringLiteral("text")).toString().trimmed();
-            if (!line.isEmpty()) {
-                translatedLines.append(line);
+            if (value.isObject()) {
+                translatedLines.append(value.toObject().value(QStringLiteral("text")).toString().trimmed());
             }
         }
         const QJsonArray errors = root.value(QStringLiteral("errors")).toArray();
@@ -197,7 +196,7 @@ void OcrResultWindow::finishTranslation(markshot::providers::ProviderTask *task,
             detail = errors.first().toString();
         }
     }
-    const QString translatedText = translatedLines.join(QLatin1Char('\n'));
+    const QString translatedText = translatedLines.join(QLatin1Char('\n')).trimmed();
     if (!translatedText.isEmpty()) {
         m_translatedSource = m_pendingSource;
         m_translatedTarget = m_pendingTarget;

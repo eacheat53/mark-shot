@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QPainter>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QShortcut>
 #include <QSizeGrip>
 #include <QSplitter>
@@ -67,10 +68,25 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     m_titleBar->installEventFilter(this);
     layout->addWidget(m_titleBar);
 
-    layout->addWidget(new OcrSourcePreview(std::move(sourceImage), this));
+    // 2. 【OCR】【紧凑布局】高度不足时只滚动内容，标题和翻译操作保持可见
+    auto *contentScroll = new QScrollArea(this);
+    contentScroll->setObjectName(QStringLiteral("ocrContentScroll"));
+    contentScroll->setFrameShape(QFrame::NoFrame);
+    contentScroll->setWidgetResizable(true);
+    contentScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    auto *content = new QWidget(contentScroll);
+    auto *contentLayout = new QVBoxLayout(content);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
+    contentLayout->setSpacing(8);
+    contentLayout->setSizeConstraint(QLayout::SetMinAndMaxSize);
+    contentLayout->addWidget(new OcrSourcePreview(std::move(sourceImage), content));
+    contentScroll->setWidget(content);
+    content->setAutoFillBackground(false);
+    contentScroll->viewport()->setAutoFillBackground(false);
+    layout->addWidget(contentScroll, 1);
 
-    // 2. 【OCR】【对照编辑】原文和译文各自保留编辑、复制及统计，按需要展开译文
-    m_splitter = new QSplitter(Qt::Horizontal, this);
+    // 3. 【OCR】【对照编辑】原文和译文各自保留编辑、复制及统计，按需要展开译文
+    m_splitter = new QSplitter(Qt::Horizontal, content);
     m_splitter->setObjectName(QStringLiteral("ocrTextSplitter"));
     m_splitter->setHandleWidth(8);
     m_splitter->setChildrenCollapsible(false);
@@ -86,14 +102,14 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     m_splitter->setStretchFactor(0, 1);
     m_splitter->setStretchFactor(1, 1);
     m_translationPane->hide();
-    layout->addWidget(m_splitter, 1);
+    contentLayout->addWidget(m_splitter, 1);
     connect(m_sourcePane, &OcrTextPane::copyRequested, this,
             [this](const QString &value) { copyResultText(value, false); });
     connect(m_translationPane, &OcrTextPane::copyRequested, this,
             [this](const QString &value) { copyResultText(value, true); });
     connect(m_sourcePane->editor(), &QTextEdit::textChanged, this, &OcrResultWindow::updateSourceState);
 
-    // 3. 【OCR】【翻译操作】目标语言和翻译按钮相邻，保留完整的语言名称
+    // 4. 【OCR】【翻译操作】目标语言和翻译按钮相邻，保留完整的语言名称
     auto *actions = new QHBoxLayout;
     actions->setSpacing(8);
     m_languageLabel = new QLabel(MS_TR("Target Language"), this);
@@ -121,7 +137,7 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     actions->addWidget(m_translateButton);
     layout->addLayout(actions);
 
-    // 4. 【OCR】【操作反馈】使用固定状态栏承载提示，避免覆盖文本或重复堆叠提示框
+    // 5. 【OCR】【操作反馈】使用固定状态栏承载提示，避免覆盖文本或重复堆叠提示框
     auto *footer = new QHBoxLayout;
     footer->setContentsMargins(0, 0, 0, 0);
     m_statusLabel = new QLabel(MS_TR("Ctrl+Enter to translate · Ctrl+Shift+C to copy all"), this);
@@ -144,7 +160,7 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
         m_statusLabel->setToolTip(QString());
     });
 
-    // 5. 【OCR】【键盘操作】保留编辑器原有复制语义，增加完整文本复制和翻译快捷键
+    // 6. 【OCR】【键盘操作】保留编辑器原有复制语义，增加完整文本复制和翻译快捷键
     auto *closeShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
     connect(closeShortcut, &QShortcut::activated, this, &QWidget::close);
     auto *translateShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this);
