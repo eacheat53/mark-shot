@@ -1,4 +1,4 @@
-#include "ocr_result_window.h"
+#include "ocr_result_window/ocr_result_window.h"
 
 #include "app_config_store.h"
 #include "debug_log.h"
@@ -7,8 +7,11 @@
 
 #include <QApplication>
 #include <QJsonValue>
+#include <QLabel>
 #include <QMouseEvent>
+#include <QPointer>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
 #include <QSignalBlocker>
@@ -16,6 +19,75 @@
 #include <QWindow>
 
 namespace markshot::shot {
+
+void OcrResultWindow::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    updateResponsiveLayout();
+    if (!m_logicalGeometry.isValid()) {
+        return;
+    }
+    // 1. 【OCR】【窗口尺寸】调整大小后同步浮层边距，置顶切换继续使用实际尺寸
+    if (pinnedWindowHasLayerShellTop(this)) {
+        m_logicalGeometry.setSize(size());
+        syncPinnedWindowTopGeometry(this, m_logicalGeometry);
+    } else {
+        m_logicalGeometry = geometry();
+    }
+    setProperty("markShotPinnedGeometry", m_logicalGeometry);
+}
+
+void OcrResultWindow::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton
+        && m_titleBar->geometry().contains(event->position().toPoint())
+        && !titleControlContains(event->position().toPoint())) {
+        beginWindowDrag(event);
+        return;
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void OcrResultWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!updateWindowDrag(event)) {
+        QWidget::mouseMoveEvent(event);
+    }
+}
+
+void OcrResultWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (!finishWindowDrag(event)) {
+        QWidget::mouseReleaseEvent(event);
+    }
+}
+
+bool OcrResultWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_titleBar) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            return beginWindowDrag(static_cast<QMouseEvent *>(event));
+        }
+        if (event->type() == QEvent::MouseMove && m_dragging) {
+            return updateWindowDrag(static_cast<QMouseEvent *>(event));
+        }
+        if (event->type() == QEvent::MouseButtonRelease && m_dragging) {
+            return finishWindowDrag(static_cast<QMouseEvent *>(event));
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+bool OcrResultWindow::titleControlContains(QPoint windowPoint) const
+{
+    for (QWidget *control : {m_pinButton, m_closeButton}) {
+        const QRect bounds(control->mapTo(this, QPoint()), control->size());
+        if (bounds.contains(windowPoint)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void OcrResultWindow::showEvent(QShowEvent *event)
 {
@@ -38,6 +110,7 @@ void OcrResultWindow::recreateWindowSurface()
     const bool visible = isVisible();
     const bool resumeDrag = m_dragging && QApplication::mouseButtons().testFlag(Qt::LeftButton);
     QScreen *target = pinnedWindowTargetLayerShellScreen(m_logicalGeometry);
+    const QPointer<QWidget> focused = focusWidget();
 
     // 1. 【OCR】【窗口模式】销毁旧协议窗口，解除 layer-shell 对窗口管理器操作的限制
     if (QWidget::mouseGrabber() == this) {
@@ -58,6 +131,9 @@ void OcrResultWindow::recreateWindowSurface()
         show();
         raise();
         activateWindow();
+        if (focused) {
+            focused->setFocus(Qt::OtherFocusReason);
+        }
     }
     if (resumeDrag) {
         grabMouse();

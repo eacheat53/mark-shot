@@ -261,6 +261,19 @@ On KDE Plasma Wayland, `pinnedWindow.alwaysOnTop` is applied through a session
 KWin script so the sticker stays above other windows. The window remains a
 normal xdg-toplevel, so dragging and resizing are unchanged.
 
+The OCR result window keeps the recognized text editable and opens a separate
+translation pane when needed. Each pane has its own copy action. Wide windows
+show both panes side by side; narrow windows stack them. Drag the divider to
+adjust their space, or use the bottom-right grip to resize the window. Expand
+**Source image** to check the screenshot used for recognition.
+
+Choose the target language and translate from the bottom action bar. A running
+translation can be canceled. Editing the source or changing the target language
+marks the existing translation as out of date. `Ctrl+Enter` translates,
+`Ctrl+Shift+C` copies the full text of the focused editor, `Ctrl+C` copies the
+selection, and `Esc` closes the window. The window follows the configured light
+or dark interface theme.
+
 The separate OCR result window opens as a regular window by default, so niri can
 identify it with `niri msg pick-window` and apply window rules. Drag its title bar
 or use your window manager's move controls. Its pin button saves the independent

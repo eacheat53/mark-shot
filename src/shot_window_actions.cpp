@@ -203,6 +203,12 @@ void ShotWindow::ocrCopySelection()
     const markshot::providers::TaskResult taskResult = task->waitForResult();
     task->deleteLater();
 
+    // 3. 【OCR】【原图预览】在删除临时文件前保留实际识别图片
+    const bool showResultPanel = ocrResultPanelEnabled();
+    QImage sourceImage;
+    if (taskResult.ok && showResultPanel) {
+        sourceImage.load(tempPath);
+    }
     QFile::remove(tempPath);
     QApplication::restoreOverrideCursor();
 
@@ -246,8 +252,8 @@ void ShotWindow::ocrCopySelection()
 
     const QString result = markshot::ocr::tokensText(parsedOcr.tokens);
 
-    if (ocrResultPanelEnabled()) {
-        auto *window = createOcrResultWindow(result, targetScreen.data());
+    if (showResultPanel) {
+        auto *window = createOcrResultWindow(result, targetScreen.data(), std::move(sourceImage));
         window->show();
         window->raise();
         window->activateWindow();

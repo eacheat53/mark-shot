@@ -1,16 +1,11 @@
+include(cmake/ocr_result_window_sources.cmake)
+
 set(MARK_SHOT_WINDOW_SOURCES
+    ${MARK_SHOT_OCR_WINDOW_SOURCES}
     src/annotation_state_store.cpp
     src/annotation_state_store.h
     src/capture_cross_cursor.cpp
     src/capture_cross_cursor.h
-    src/ocr_result_window.cpp
-    src/ocr_result_window.h
-    src/ocr_result_window_config.cpp
-    src/ocr_result_window_config.h
-    src/ocr_result_window_placement.cpp
-    src/ocr_result_window_geometry.cpp
-    src/ocr_result_window_geometry.h
-    src/ocr_result_window_translation.cpp
     src/shot_window.cpp
     src/shot_window.h
     src/shot_window_actions.cpp

@@ -1,0 +1,184 @@
+#pragma once
+
+#include "shot_window_internal.h"
+
+#include <QImage>
+#include <QWidget>
+
+class QComboBox;
+class QLabel;
+class QMouseEvent;
+class QPushButton;
+class QScreen;
+class QSplitter;
+class QTimer;
+
+namespace markshot::providers {
+class ProviderTask;
+struct TaskResult;
+}
+
+namespace markshot::shot {
+
+class OcrTextPane;
+
+/// @brief 组合原图、识别原文与译文，并协调独立置顶和翻译任务
+class OcrResultWindow final : public QWidget {
+public:
+    /// @brief 创建 OCR 结果窗口
+    /// @param text 初始识别原文
+    /// @param targetScreen 截图所在屏幕，缺失时回退到主屏幕
+    /// @param sourceImage 本次识别使用的原图，缺失时隐藏预览入口
+    explicit OcrResultWindow(QString text, QScreen *targetScreen = nullptr, QImage sourceImage = {});
+
+    /// @brief 取消正在运行的翻译任务并释放临时文件
+    ~OcrResultWindow() override;
+
+protected:
+    /// @brief 绘制透明窗口的主题背景与圆角边框
+    /// @param event 绘制事件
+    /// @return 无返回值
+    void paintEvent(QPaintEvent *event) override;
+    /// @brief 显示后重试依赖桌面扩展的置顶请求
+    /// @param event 显示事件
+    /// @return 无返回值
+    void showEvent(QShowEvent *event) override;
+    /// @brief 同步布局以及 layer-shell 窗口的实际尺寸
+    /// @param event 尺寸变更事件
+    /// @return 无返回值
+    void resizeEvent(QResizeEvent *event) override;
+    /// @brief 激活窗口或系统主题改变后同步界面主题
+    /// @param event 窗口状态事件
+    /// @return 无返回值
+    void changeEvent(QEvent *event) override;
+    /// @brief 处理标题栏拖动的起始事件
+    /// @param event 鼠标事件
+    /// @return 无返回值
+    void mousePressEvent(QMouseEvent *event) override;
+    /// @brief 更新正在进行的窗口拖动
+    /// @param event 鼠标事件
+    /// @return 无返回值
+    void mouseMoveEvent(QMouseEvent *event) override;
+    /// @brief 结束窗口拖动
+    /// @param event 鼠标事件
+    /// @return 无返回值
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    /// @brief 接收标题栏空白区域的拖动事件
+    /// @param watched 事件目标
+    /// @param event Qt 事件
+    /// @return 已处理时返回 true
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+private:
+    /// @brief 构建独立文本区、原图预览和窗口操作栏
+    /// @param text 初始识别文本
+    /// @param sourceImage 原始截图
+    /// @return 无返回值
+    void initializeUi(const QString &text, QImage sourceImage);
+    /// @brief 应用当前明暗主题并更新图标配色
+    /// @return 无返回值
+    void applyTheme();
+    /// @brief 按可用宽度切换文本区排列方向
+    /// @return 无返回值
+    void updateResponsiveLayout();
+    /// @brief 同步翻译入口及旧译文提示
+    /// @return 无返回值
+    void updateSourceState();
+    /// @brief 展开译文区并为两个文本区分配空间
+    /// @return 无返回值
+    void showTranslationPane();
+    /// @brief 通过应用剪贴板服务复制文本并显示结果
+    /// @param text 待复制的完整文本
+    /// @param translated 是否为译文
+    /// @return 无返回值
+    void copyResultText(const QString &text, bool translated);
+    /// @brief 在底部状态栏显示短提示，重复操作重置计时
+    /// @param text 提示内容
+    /// @param durationMs 显示时间，单位为毫秒
+    /// @return 无返回值
+    void showToast(const QString &text, int durationMs = 2500);
+
+    /// @brief 判断窗口局部坐标是否命中标题栏操作按钮
+    /// @param windowPoint 窗口局部坐标
+    /// @return 命中按钮时返回 true
+    bool titleControlContains(QPoint windowPoint) const;
+    /// @brief 开始拖动 OCR 窗口
+    /// @param event 鼠标事件
+    /// @return 成功开始时返回 true
+    bool beginWindowDrag(QMouseEvent *event);
+    /// @brief 更新 OCR 窗口拖动位置
+    /// @param event 鼠标事件
+    /// @return 当前正在拖动时返回 true
+    bool updateWindowDrag(QMouseEvent *event);
+    /// @brief 结束 OCR 窗口拖动
+    /// @param event 鼠标事件
+    /// @return 成功结束时返回 true
+    bool finishWindowDrag(QMouseEvent *event);
+    /// @brief 切换并保存 OCR 窗口置顶状态
+    /// @param alwaysOnTop 是否保持置顶
+    /// @return 无返回值
+    void setAlwaysOnTop(bool alwaysOnTop);
+    /// @brief 切换窗口协议角色并恢复位置与拖动状态
+    /// @return 无返回值
+    void recreateWindowSurface();
+
+    /// @brief 初始化可输入自定义语言的目标语言下拉框
+    /// @return 无返回值
+    void setupTargetLanguageCombo();
+    /// @brief 同步目标语言下拉框的显示值
+    /// @param targetLanguage 翻译器使用的语言名称
+    /// @return 无返回值
+    void setTargetLanguageComboValue(const QString &targetLanguage);
+    /// @brief 读取并规范化当前目标语言
+    /// @return 翻译器使用的语言名称
+    QString currentTargetLanguage() const;
+    /// @brief 持久化当前目标语言，失败时恢复旧值
+    /// @return 无返回值
+    void applyTargetLanguageFromCombo();
+    /// @brief 使用当前原文启动翻译任务
+    /// @return 无返回值
+    void startTranslation();
+    /// @brief 将成功结果写入译文区，失败时保留原文并显示原因
+    /// @param task 已完成的任务
+    /// @param result 翻译任务结果
+    /// @return 无返回值
+    void finishTranslation(markshot::providers::ProviderTask *task,
+                           const markshot::providers::TaskResult &result);
+    /// @brief 取消翻译并清理临时文件
+    /// @return 无返回值
+    void cancelTranslation();
+    /// @brief 清理已经结束的任务及临时文件
+    /// @param task 已结束任务
+    /// @return 无返回值
+    void finishTranslationCleanup(markshot::providers::ProviderTask *task);
+    /// @brief 恢复翻译按钮、编辑器和语言下拉框状态
+    /// @return 无返回值
+    void resetTranslationUi();
+
+    QWidget *m_titleBar = nullptr;
+    QLabel *m_titleIcon = nullptr;
+    QLabel *m_languageLabel = nullptr;
+    QLabel *m_statusLabel = nullptr;
+    QTimer *m_statusTimer = nullptr;
+    QSplitter *m_splitter = nullptr;
+    OcrTextPane *m_sourcePane = nullptr;
+    OcrTextPane *m_translationPane = nullptr;
+    QPushButton *m_translateButton = nullptr;
+    QComboBox *m_targetLanguageCombo = nullptr;
+    QPushButton *m_pinButton = nullptr;
+    QPushButton *m_closeButton = nullptr;
+    markshot::providers::ProviderTask *m_translationTask = nullptr;
+    QString m_translationInputPath;
+    QString m_pendingSource;
+    QString m_pendingTarget;
+    QString m_translatedSource;
+    QString m_translatedTarget;
+    QPoint m_dragOffset;
+    QRect m_logicalGeometry;
+    PinnedWindowConfig m_config;
+    bool m_alwaysOnTop = false;
+    bool m_dragging = false;
+    bool m_translationFailed = false;
+};
+
+}
