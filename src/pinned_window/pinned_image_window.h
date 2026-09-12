@@ -39,6 +39,8 @@ struct TaskResult;
 
 namespace markshot::shot {
 
+class PinnedNativeResize;
+
 /// @brief 提供置顶图片显示、文本识别、文本选择、翻译和边界缩放的窗口。
 class PinnedImageWindow final : public QWidget {
 public:
@@ -198,6 +200,10 @@ private:
     /// @param direction 缩放方向。
     /// @return 应让位给窗口移动时返回 true。
     bool shouldBlockResizeAtEmbeddedEdge(PinnedResizeDirection direction) const;
+
+    /// @brief 在首次显示前准备 KDE 原生缩放及图片尺寸同步
+    /// @return 无返回值
+    void initializeNativeResize();
 
     /// @brief 开始边界拖拽缩放。
     /// @param event 鼠标按下事件。
@@ -387,6 +393,7 @@ private:
     QPoint m_layerShellContentOffset;
     QPoint m_dragOffset;
     PinnedResizeDragState m_resizeDrag;
+    PinnedNativeResize *m_nativeResize = nullptr;
     PinnedWindowConfig m_config;
     QVector<OcrToken> m_ocrTokens;
     QVector<OcrToken> m_translatedTokens;

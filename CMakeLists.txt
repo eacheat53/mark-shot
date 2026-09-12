@@ -212,12 +212,18 @@ qt_add_executable(mark-shot
     src/pinned_window/pinned_layer_shell_screen_binding.h
     src/pinned_window/pinned_resize_controller.cpp
     src/pinned_window/pinned_resize_controller.h
+    src/pinned_window/pinned_native_resize.cpp
+    src/pinned_window/pinned_native_resize.h
     src/pinned_window/pinned_text_selection_metrics.cpp
     src/pinned_window/pinned_text_selection_metrics.h
     src/pinned_window_top.cpp
     src/pinned_window_top.h
     src/pinned_window/pinned_kde_keep_above.cpp
     src/pinned_window/pinned_kde_keep_above.h
+    src/pinned_window/pinned_kde_keep_above_script.cpp
+    src/pinned_window/pinned_kde_keep_above_script.h
+    src/pinned_window/pinned_kde_keep_above_bridge.cpp
+    src/pinned_window/pinned_kde_keep_above_bridge.h
     src/annotation_launch.cpp
     src/annotation_launch.h
     src/scroll/stitcher.cpp
@@ -427,6 +433,7 @@ add_subdirectory(plugins/code-scan-zxing)
 include(CTest)
 if(BUILD_TESTING)
     include(cmake/core_tests.cmake)
+    include(cmake/kde_pinned_window_tests.cmake)
 endif()
 
 include(cmake/install_rules.cmake)

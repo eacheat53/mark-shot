@@ -1,6 +1,8 @@
 #include "pinned_window/pinned_image_window.h"
 
+#include "pinned_window/pinned_kde_keep_above.h"
 #include "pinned_window/pinned_layer_shell_geometry.h"
+#include "pinned_window/pinned_native_resize.h"
 #include "pinned_window_top.h"
 
 #include <QGuiApplication>
@@ -154,6 +156,21 @@ bool PinnedImageWindow::shouldBlockResizeAtEmbeddedEdge(PinnedResizeDirection di
     return pinnedResizeDirectionTouchesScreenEdge(direction, geometry, screenGeometry);
 }
 
+void PinnedImageWindow::initializeNativeResize()
+{
+    if (!usesKdePinnedKeepAbove()
+        || !QGuiApplication::platformName().contains(QStringLiteral("wayland"), Qt::CaseInsensitive)) {
+        return;
+    }
+    m_nativeResize = new PinnedNativeResize(this, [this](QSize size) {
+        // 1. 【钉图】【原生缩放】同步绘制尺寸，不请求 Wayland 无法应用的绝对位置
+        m_logicalGeometry = QRect(pos(), size);
+        m_scale = static_cast<qreal>(size.width()) / std::max(1, m_displayBaseSize.width());
+        setProperty("markShotPinnedGeometry", m_logicalGeometry);
+        update();
+    });
+}
+
 bool PinnedImageWindow::startResizeDrag(QMouseEvent *event)
 {
     const PinnedResizeDirection direction = resizeDirectionAt(event->position());
@@ -165,6 +182,9 @@ bool PinnedImageWindow::startResizeDrag(QMouseEvent *event)
     const QRect startGeometry(pinnedTopLeft(), logicalPinnedSize());
     m_resizeDrag = beginPinnedResizeDrag(direction, startGeometry, event->globalPosition().toPoint());
     setCursor(cursorForPinnedResizeDirection(direction));
+    if (m_nativeResize) {
+        m_nativeResize->start(direction);
+    }
     return true;
 }
 
@@ -175,6 +195,9 @@ bool PinnedImageWindow::continueResizeDrag(QMouseEvent *event)
     }
     if (!event->buttons().testFlag(Qt::LeftButton)) {
         finishResizeDrag(event->position());
+        return true;
+    }
+    if (m_nativeResize && m_nativeResize->isActive()) {
         return true;
     }
 
@@ -188,6 +211,9 @@ bool PinnedImageWindow::continueResizeDrag(QMouseEvent *event)
 
 void PinnedImageWindow::finishResizeDrag(QPointF widgetPoint)
 {
+    if (m_nativeResize) {
+        m_nativeResize->finish();
+    }
     m_resizeDrag = {};
     updateCursorForPosition(widgetPoint);
 }

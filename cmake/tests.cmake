@@ -183,6 +183,8 @@ add_test(NAME pinned-layer-shell-screen-binding
 
 qt_add_executable(mark-shot-pinned-resize-controller-test
     tests/pinned_resize_controller_test.cpp
+    src/pinned_window/pinned_native_resize.cpp
+    src/pinned_window/pinned_native_resize.h
     src/pinned_window/pinned_resize_controller.cpp
     src/pinned_window/pinned_resize_controller.h
 )
@@ -191,6 +193,7 @@ target_link_libraries(mark-shot-pinned-resize-controller-test
     PRIVATE
         Qt6::Core
         Qt6::Gui
+        Qt6::Widgets
         Qt6::Test
 )
 add_test(NAME pinned-resize-controller COMMAND mark-shot-pinned-resize-controller-test)
@@ -290,10 +293,8 @@ add_test(NAME selection-loupe COMMAND mark-shot-selection-loupe-test)
 
 qt_add_executable(mark-shot-pinned-kde-keep-above-test
     tests/pinned_kde_keep_above_test.cpp
-    src/pinned_window/pinned_kde_keep_above.cpp
-    src/pinned_window/pinned_kde_keep_above.h
-    src/debug_log.cpp
-    src/debug_log.h
+    src/pinned_window/pinned_kde_keep_above_script.cpp
+    src/pinned_window/pinned_kde_keep_above_script.h
 )
 target_include_directories(mark-shot-pinned-kde-keep-above-test PRIVATE src)
 target_link_libraries(mark-shot-pinned-kde-keep-above-test
@@ -303,6 +304,11 @@ target_link_libraries(mark-shot-pinned-kde-keep-above-test
         Qt6::Test
 )
 add_test(NAME pinned-kde-keep-above COMMAND mark-shot-pinned-kde-keep-above-test)
+find_package(Qt6 QUIET COMPONENTS Qml)
+if(TARGET Qt6::Qml)
+    target_link_libraries(mark-shot-pinned-kde-keep-above-test PRIVATE Qt6::Qml)
+    target_compile_definitions(mark-shot-pinned-kde-keep-above-test PRIVATE MARK_SHOT_TEST_WITH_QML=1)
+endif()
 
 qt_add_executable(mark-shot-selection-loupe-config-test
     tests/selection_loupe_config_test.cpp

@@ -4,6 +4,7 @@
 #include "clipboard_image.h"
 #include "debug_log.h"
 #include "notifications/app_notifications.h"
+#include "pinned_window/pinned_native_resize.h"
 #include "pinned_window_top.h"
 #include "translation_language_options.h"
 #include "ui/i18n.h"
@@ -131,6 +132,7 @@ PinnedImageWindow::PinnedImageWindow(QImage image, std::optional<QPoint> initial
     m_logicalGeometry = QRect(pos(), size());
     setProperty("markShotPinnedGeometry", m_logicalGeometry);
     applyPinnedWindowTopState(this, m_config.alwaysOnTop);
+    initializeNativeResize();
     if (pinnedWindowHasLayerShellTop(this)) {
         setPinnedGeometry(m_logicalGeometry, false);
     }
@@ -147,6 +149,9 @@ PinnedImageWindow::~PinnedImageWindow()
 
 bool PinnedImageWindow::event(QEvent *event)
 {
+    if (event->type() == QEvent::Hide && m_nativeResize && m_nativeResize->isActive()) {
+        finishResizeDrag(QPointF(-1, -1));
+    }
     const bool shouldRaise = event->type() == QEvent::WindowDeactivate
         || event->type() == QEvent::ActivationChange
         || event->type() == QEvent::Show;
@@ -333,6 +338,9 @@ void PinnedImageWindow::enterEvent(QEnterEvent *event)
     if (!QApplication::mouseButtons().testFlag(Qt::LeftButton)) {
         m_moving = false;
         m_selectingText = false;
+        if (m_nativeResize && m_nativeResize->isActive()) {
+            finishResizeDrag(event->position());
+        }
     }
     updateCursorForPosition(event->position());
     QWidget::enterEvent(event);
