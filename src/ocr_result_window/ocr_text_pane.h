@@ -7,6 +7,7 @@ class QLabel;
 class QProgressBar;
 class QPushButton;
 class QTextEdit;
+class QTimer;
 
 namespace markshot::shot {
 
@@ -49,6 +50,11 @@ public:
     /// @return 无返回值
     void refreshTheme();
 
+    /// @brief 在所属复制按钮就地显示结果并自动恢复操作文案
+    /// @param success 剪贴板写入是否成功
+    /// @return 无返回值
+    void showCopyFeedback(bool success);
+
 signals:
     /// @brief 请求窗口通过应用的剪贴板服务复制完整文本
     /// @param text 保留原始空白的完整文本
@@ -66,6 +72,9 @@ private:
 
     QTextEdit *m_editor = nullptr;
     QPushButton *m_copyButton = nullptr;
+    QPushButton *m_undoButton = nullptr;
+    QTimer *m_copyTimer = nullptr;
+    QLabel *m_titleLabel = nullptr;
     QLabel *m_statistics = nullptr;
     QLabel *m_notice = nullptr;
     QProgressBar *m_progress = nullptr;

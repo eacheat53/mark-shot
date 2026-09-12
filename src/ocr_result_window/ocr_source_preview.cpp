@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QResizeEvent>
+#include <QSignalBlocker>
 #include <QToolButton>
 
 namespace markshot::shot {
@@ -59,6 +60,8 @@ void OcrSourcePreview::resizeEvent(QResizeEvent *event)
 
 void OcrSourcePreview::setExpanded(bool expanded)
 {
+    const QSignalBlocker blocker(m_toggle);
+    m_toggle->setChecked(expanded);
     m_toggle->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
     m_toggle->setToolTip(expanded ? MS_TR("Hide source image") : MS_TR("Show source image"));
     m_preview->setVisible(expanded);

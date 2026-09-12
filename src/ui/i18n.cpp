@@ -1,4 +1,5 @@
 #include "ui/i18n.h"
+#include "ui/i18n_task_windows.h"
 
 #include "app_config_store.h"
 #include "ui/interface_language_config.h"
@@ -227,27 +228,6 @@ const QHash<QString, QString> &chineseTable()
         {QStringLiteral("Failed to save pinned window setting."), QStringLiteral("保存置顶图片设置失败。")},
         {QStringLiteral("Failed to save pinned text selection setting."), QStringLiteral("保存置顶图片拖选设置失败。")},
         {QStringLiteral("OCR Result"), QStringLiteral("OCR 结果")},
-        {QStringLiteral("Text Recognition"), QStringLiteral("文字识别")},
-        {QStringLiteral("Recognized text"), QStringLiteral("识别原文")},
-        {QStringLiteral("Translated text"), QStringLiteral("译文")},
-        {QStringLiteral("Source image"), QStringLiteral("原图")},
-        {QStringLiteral("Show source image"), QStringLiteral("展开原图")},
-        {QStringLiteral("Hide source image"), QStringLiteral("收起原图")},
-        {QStringLiteral("Translation appears here"), QStringLiteral("翻译结果会显示在这里")},
-        {QStringLiteral("Copy all text"), QStringLiteral("复制全部文字")},
-        {QStringLiteral("Copy %1"), QStringLiteral("复制%1")},
-        {QStringLiteral("%1 characters · %2 lines"), QStringLiteral("%1 字符 · %2 行")},
-        {QStringLiteral("Translation copied"), QStringLiteral("已复制译文")},
-        {QStringLiteral("Cancel translation"), QStringLiteral("取消翻译")},
-        {QStringLiteral("Translation canceled"), QStringLiteral("翻译已取消")},
-        {QStringLiteral("Resize window"), QStringLiteral("调整窗口大小")},
-        {QStringLiteral("Source or language changed. Translate again to update."),
-         QStringLiteral("原文或目标语言已更改，请重新翻译。")},
-        {QStringLiteral("Ctrl+Enter to translate · Ctrl+Shift+C to copy all"),
-         QStringLiteral("Ctrl+Enter 翻译 · Ctrl+Shift+C 复制全文")},
-        {QStringLiteral("Review or edit the recognized text before copying."),
-         QStringLiteral("复制前可先检查或编辑识别结果。")},
-        {QStringLiteral("OCR text appears here"), QStringLiteral("OCR 文字会显示在这里")},
         {QStringLiteral("No text to translate"), QStringLiteral("没有可翻译的文字")},
         {QStringLiteral("Translation failed"), QStringLiteral("翻译失败")},
         {QStringLiteral("Translation failed: %1"), QStringLiteral("翻译失败：%1")},
@@ -707,6 +687,10 @@ Language language()
 QString translate(const QString &source)
 {
     if (g_language == Language::Chinese) {
+        const auto taskText = taskWindowChineseTable().constFind(source);
+        if (taskText != taskWindowChineseTable().constEnd()) {
+            return taskText.value();
+        }
         const auto it = chineseTable().constFind(source);
         if (it != chineseTable().constEnd()) {
             return it.value();

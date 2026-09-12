@@ -48,7 +48,8 @@ private slots:
         pane.setText(text);
         const auto *statistics = pane.findChild<QLabel *>(QStringLiteral("ocrTextStatistics"));
         QVERIFY(statistics);
-        QCOMPARE(statistics->text(), QStringLiteral("%1 characters · %2 lines").arg(characters).arg(lines));
+        QCOMPARE(statistics->text(), QStringLiteral("%1 characters").arg(characters));
+        QCOMPARE(statistics->toolTip(), QStringLiteral("%1 characters · %2 lines").arg(characters).arg(lines));
     }
 
     /// @brief 验证分区复制按钮始终复制全文并保留空白，不受编辑器选区影响

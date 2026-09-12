@@ -21,10 +21,10 @@ QString ocrWindowStyleSheet(const QPalette &palette)
         "QLabel { background: transparent; color: %3; border: 0; }"
         "QLabel[role=\"muted\"], QLabel#ocrPaneNotice { color: %8; }"
         "QLabel#ocrPaneNotice[error=\"true\"] { color: %11; }"
-        "QFrame[ocrPane=\"true\"] { background: %2; border: 1px solid %7; border-radius: 8px; }"
-        "QTextEdit { background: %2; color: %3; border: 1px solid transparent;"
+        "QFrame[ocrPane=\"true\"] { background: transparent; border: 0; }"
+        "QTextEdit { background: transparent; color: %3; border: 1px solid transparent;"
         " border-radius: 4px; padding: 2px; selection-background-color: %5; selection-color: %6; }"
-        "QTextEdit:focus { border-color: %5; }"
+        "QTextEdit:focus { border-color: %7; }"
         "QPushButton { background: %4; color: %3; border: 1px solid %7; border-radius: 6px;"
         " padding: 5px 10px; min-height: 18px; }"
         "QPushButton:hover { background: %9; border-color: %5; }"
@@ -50,14 +50,14 @@ QString ocrWindowStyleSheet(const QPalette &palette)
         " selection-background-color: %5; selection-color: %6; }"
         "QComboBox::drop-down { subcontrol-origin: padding; subcontrol-position: center right;"
         " width: 24px; border: 0; background: transparent; }"
-        "QComboBox::down-arrow { image: url(:/icons/chevron-down.svg); width: 12px; height: 12px; }"
+        "QComboBox::down-arrow { image: url(%12); width: 12px; height: 12px; }"
         "QComboBox QAbstractItemView { background: %2; color: %3; border: 1px solid %7;"
         " selection-background-color: %5; selection-color: %6; outline: 0; padding: 4px; }"
         "QToolButton#ocrSourceToggle { background: transparent; color: %8; border: 1px solid transparent;"
         " border-radius: 6px; padding: 4px 6px; text-align: left; }"
         "QToolButton#ocrSourceToggle:hover { background: %9; color: %3; }"
         "QToolButton#ocrSourceToggle:focus { border-color: %5; }"
-        "QLabel#ocrSourceThumbnail { background: %9; border: 1px solid %7; border-radius: 6px; }"
+        "QLabel#ocrSourceThumbnail { background: transparent; border: 0; }"
         "QSplitter::handle { background: transparent; }"
         "QSplitter::handle:hover { background: %10; border-radius: 3px; }"
         "QProgressBar#ocrTranslationProgress { background: %9; border: 0; border-radius: 1px; }"
@@ -71,7 +71,8 @@ QString ocrWindowStyleSheet(const QPalette &palette)
              palette.color(QPalette::Text).name(), palette.color(QPalette::Button).name(),
              palette.color(QPalette::Highlight).name(), palette.color(QPalette::HighlightedText).name(),
              border, muted, palette.color(QPalette::AlternateBase).name())
-        .arg(accentSurface, error);
+        .arg(accentSurface, error,
+             light ? QStringLiteral(":/icons/chevron-down-light.svg") : QStringLiteral(":/icons/chevron-down.svg"));
 }
 
 QString ocrMenuStyleSheet(const QPalette &palette)

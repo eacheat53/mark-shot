@@ -40,3 +40,22 @@ qt_add_executable(mark-shot-ocr-text-pane-test
 target_include_directories(mark-shot-ocr-text-pane-test PRIVATE src)
 target_link_libraries(mark-shot-ocr-text-pane-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
 add_test(NAME ocr-text-pane COMMAND mark-shot-ocr-text-pane-test)
+
+qt_add_executable(mark-shot-disclosure-section-test
+    tests/disclosure_section_test.cpp
+    src/ui/disclosure_section.cpp
+    src/ui/disclosure_section.h
+    src/ui/theme.cpp
+)
+target_include_directories(mark-shot-disclosure-section-test PRIVATE src)
+target_link_libraries(mark-shot-disclosure-section-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+add_test(NAME disclosure-section COMMAND mark-shot-disclosure-section-test)
+
+qt_add_executable(mark-shot-window-resize-grip-test
+    tests/window_resize_grip_test.cpp
+    src/ui/window_resize_grip.cpp
+    src/ui/window_resize_grip.h
+)
+target_include_directories(mark-shot-window-resize-grip-test PRIVATE src)
+target_link_libraries(mark-shot-window-resize-grip-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+add_test(NAME window-resize-grip COMMAND mark-shot-window-resize-grip-test)

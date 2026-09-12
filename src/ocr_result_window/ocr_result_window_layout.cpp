@@ -4,19 +4,22 @@
 #include "ocr_result_window/ocr_result_window_style.h"
 #include "ocr_result_window/ocr_source_preview.h"
 #include "ocr_result_window/ocr_text_pane.h"
+#include "pinned_window_top.h"
 #include "settings/settings_design_tokens.h"
 #include "ui/i18n.h"
 #include "ui/interface_theme_config.h"
 #include "ui/theme.h"
+#include "ui/window_resize_grip.h"
 
 #include <QBoxLayout>
 #include <QComboBox>
 #include <QLabel>
+#include <QMenu>
+#include <QSignalBlocker>
 #include <QPainter>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QShortcut>
-#include <QSizeGrip>
 #include <QSplitter>
 #include <QStyleOption>
 #include <QTextEdit>
@@ -31,7 +34,7 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     layout->setContentsMargins(12, 10, 12, 8);
     layout->setSpacing(8);
 
-    // 1. 【OCR】【窗口标题】标题栏只保留窗口名称、置顶和关闭操作
+    // 1. 【OCR】【窗口标题】标题栏保留窗口操作，原图和快捷键收纳到更多菜单
     m_titleBar = new QWidget(this);
     m_titleBar->setObjectName(QStringLiteral("ocrTitleBar"));
     m_titleBar->setCursor(Qt::SizeAllCursor);
@@ -46,6 +49,10 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     title->setFont(markshot::theme::uiFont(11, QFont::DemiBold));
     title->setAttribute(Qt::WA_TransparentForMouseEvents);
     titleLayout->addWidget(title, 1);
+    m_moreButton = new QPushButton(MS_TR("More actions"), m_titleBar);
+    m_moreButton->setObjectName(QStringLiteral("ocrMoreButton"));
+    m_moreButton->setProperty("role", QStringLiteral("quiet"));
+    titleLayout->addWidget(m_moreButton);
     m_pinButton = new QPushButton(m_titleBar);
     m_pinButton->setObjectName(QStringLiteral("ocrPinButton"));
     m_pinButton->setCheckable(true);
@@ -79,7 +86,7 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(8);
     contentLayout->setSizeConstraint(QLayout::SetMinAndMaxSize);
-    contentLayout->addWidget(new OcrSourcePreview(std::move(sourceImage), content));
+
     contentScroll->setWidget(content);
     content->setAutoFillBackground(false);
     contentScroll->viewport()->setAutoFillBackground(false);
@@ -90,7 +97,7 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     m_splitter->setObjectName(QStringLiteral("ocrTextSplitter"));
     m_splitter->setHandleWidth(8);
     m_splitter->setChildrenCollapsible(false);
-    m_sourcePane = new OcrTextPane(MS_TR("Recognized text"), MS_TR("OCR text appears here"), m_splitter);
+    m_sourcePane = new OcrTextPane(MS_TR("Recognized"), MS_TR("OCR text appears here"), m_splitter);
     m_sourcePane->setObjectName(QStringLiteral("ocrSourcePane"));
     m_sourcePane->editor()->setObjectName(QStringLiteral("ocrEditor"));
     m_sourcePane->setText(text);
@@ -103,6 +110,24 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     m_splitter->setStretchFactor(1, 1);
     m_translationPane->hide();
     contentLayout->addWidget(m_splitter, 1);
+    const bool hasSource = !sourceImage.isNull();
+    auto *preview = new OcrSourcePreview(std::move(sourceImage), content);
+    preview->setExpanded(true);
+    preview->hide();
+    contentLayout->addWidget(preview);
+    auto *moreMenu = new QMenu(m_moreButton);
+    if (hasSource) {
+        QAction *sourceAction = moreMenu->addAction(MS_TR("Source image"));
+        sourceAction->setCheckable(true);
+        connect(sourceAction, &QAction::toggled, preview, &QWidget::setVisible);
+    }
+    auto *shortcuts = moreMenu->addMenu(MS_TR("Keyboard shortcuts"));
+    for (const QString &entry : {MS_TR("Translate") + QStringLiteral("  Ctrl+Enter"),
+                                 MS_TR("Copy all text") + QStringLiteral("  Ctrl+Shift+C"),
+                                 MS_TR("Undo edit") + QStringLiteral("  Ctrl+Z")}) {
+        shortcuts->addAction(entry)->setEnabled(false);
+    }
+    m_moreButton->setMenu(moreMenu);
     connect(m_sourcePane, &OcrTextPane::copyRequested, this,
             [this](const QString &value) { copyResultText(value, false); });
     connect(m_translationPane, &OcrTextPane::copyRequested, this,
@@ -110,7 +135,9 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     connect(m_sourcePane->editor(), &QTextEdit::textChanged, this, &OcrResultWindow::updateSourceState);
 
     // 4. 【OCR】【翻译操作】目标语言和翻译按钮相邻，保留完整的语言名称
-    auto *actions = new QHBoxLayout;
+    m_translationActions = new QWidget(this);
+    auto *actions = new QHBoxLayout(m_translationActions);
+    actions->setContentsMargins(0, 0, 0, 0);
     actions->setSpacing(8);
     m_languageLabel = new QLabel(MS_TR("Target Language"), this);
     m_languageLabel->setProperty("role", QStringLiteral("muted"));
@@ -135,19 +162,29 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
         }
     });
     actions->addWidget(m_translateButton);
-    layout->addLayout(actions);
+    layout->addWidget(m_translationActions);
+    m_translationActions->hide();
 
     // 5. 【OCR】【操作反馈】使用固定状态栏承载提示，避免覆盖文本或重复堆叠提示框
     auto *footer = new QHBoxLayout;
     footer->setContentsMargins(0, 0, 0, 0);
-    m_statusLabel = new QLabel(MS_TR("Ctrl+Enter to translate · Ctrl+Shift+C to copy all"), this);
+    m_translationToggle = new QPushButton(MS_TR("Translate"), this);
+    m_translationToggle->setObjectName(QStringLiteral("ocrTranslationToggle"));
+    m_translationToggle->setProperty("role", QStringLiteral("quiet"));
+    m_translationToggle->setCheckable(true);
+    m_translationToggle->setToolTip(MS_TR("Translate") + QStringLiteral(" (Ctrl+Enter)"));
+    footer->addWidget(m_translationToggle);
+    connect(m_translationToggle, &QPushButton::toggled, this, &OcrResultWindow::toggleTranslationPane);
+    m_statusLabel = new QLabel(this);
     m_statusLabel->setObjectName(QStringLiteral("ocrStatus"));
     m_statusLabel->setProperty("role", QStringLiteral("muted"));
     m_statusLabel->setFont(markshot::theme::uiFont(9));
     m_statusLabel->setTextFormat(Qt::PlainText);
     m_statusLabel->setWordWrap(true);
     footer->addWidget(m_statusLabel, 1);
-    auto *grip = new QSizeGrip(this);
+    auto *grip = new markshot::ui::WindowResizeGrip(this, [this] {
+        return pinnedWindowHasLayerShellTop(this);
+    });
     grip->setObjectName(QStringLiteral("ocrResizeGrip"));
     grip->setFixedSize(18, 18);
     grip->setToolTip(MS_TR("Resize window"));
@@ -156,7 +193,7 @@ void OcrResultWindow::initializeUi(const QString &text, QImage sourceImage)
     m_statusTimer = new QTimer(this);
     m_statusTimer->setSingleShot(true);
     connect(m_statusTimer, &QTimer::timeout, this, [this] {
-        m_statusLabel->setText(MS_TR("Ctrl+Enter to translate · Ctrl+Shift+C to copy all"));
+        m_statusLabel->clear();
         m_statusLabel->setToolTip(QString());
     });
 
@@ -191,6 +228,7 @@ void OcrResultWindow::applyTheme()
     m_titleIcon->setPixmap(ocrActionIcon(ShotWindow::Action::OcrCopy, accent).pixmap(QSize(22, 22), devicePixelRatioF()));
     m_pinButton->setIcon(ocrActionIcon(ShotWindow::Action::Pin, ink, accent));
     m_closeButton->setIcon(ocrActionIcon(ShotWindow::Action::Cancel, ink));
+    m_moreButton->menu()->setStyleSheet(ocrMenuStyleSheet(colors));
     m_sourcePane->setPalette(colors);
     m_translationPane->setPalette(colors);
     m_sourcePane->refreshTheme();
@@ -215,18 +253,45 @@ void OcrResultWindow::updateResponsiveLayout()
     const Qt::Orientation orientation = width() >= 620 ? Qt::Horizontal : Qt::Vertical;
     if (m_splitter->orientation() != orientation) {
         m_splitter->setOrientation(orientation);
-        m_splitter->setSizes({1, 1});
+        distributeTextPaneSpace();
     }
     m_languageLabel->setVisible(width() >= 480);
 }
 
+void OcrResultWindow::distributeTextPaneSpace()
+{
+    // 1. 【OCR】【内容比例】使用实际像素分配空间，避免小权重被最小尺寸约束成等宽
+    const int extent = m_splitter->orientation() == Qt::Horizontal
+        ? m_splitter->width() : m_splitter->height();
+    m_splitter->setSizes({extent * 3 / 5, extent * 2 / 5});
+}
+
 void OcrResultWindow::showTranslationPane()
 {
+    const QSignalBlocker blocker(m_translationToggle);
+    m_translationToggle->setChecked(true);
+    m_translationToggle->setText(MS_TR("Hide translation"));
+    m_translationActions->show();
     if (m_translationPane->isHidden()) {
         m_translationPane->show();
         updateResponsiveLayout();
-        m_splitter->setSizes({1, 1});
+        distributeTextPaneSpace();
     }
+}
+
+void OcrResultWindow::toggleTranslationPane(bool visible)
+{
+    if (visible) {
+        showTranslationPane();
+        if (m_translationPane->text().isEmpty()) {
+            startTranslation();
+        }
+        return;
+    }
+    cancelTranslation();
+    m_translationPane->hide();
+    m_translationActions->hide();
+    m_translationToggle->setText(MS_TR("Translate"));
 }
 
 }

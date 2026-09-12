@@ -30,6 +30,13 @@ QVBoxLayout *createSettingsPageLayout(QWidget *parent);
 /// @return 卡片控件。
 QFrame *createSettingsCard(const QString &title, const QString &description, QWidget *parent);
 
+/// @brief 创建默认折叠的低频配置分组，折叠不会丢失表单值
+/// @param title 分组入口标题
+/// @param description 展开后显示的说明
+/// @param parent 所属页面
+/// @return 可通过 settingsCardForm 添加选项的分组
+QFrame *createAdvancedSettingsCard(const QString &title, const QString &description, QWidget *parent);
+
 /// @brief 获取卡片中的表单布局。
 /// @param card 卡片控件。
 /// @return 表单布局。

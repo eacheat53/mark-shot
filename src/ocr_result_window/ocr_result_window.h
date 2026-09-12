@@ -43,7 +43,7 @@ protected:
     /// @param event 显示事件
     /// @return 无返回值
     void showEvent(QShowEvent *event) override;
-    /// @brief 同步布局以及 layer-shell 窗口的实际尺寸
+    /// @brief 同步布局并提交应用内发起的 layer-shell 尺寸变化
     /// @param event 尺寸变更事件
     /// @return 无返回值
     void resizeEvent(QResizeEvent *event) override;
@@ -81,12 +81,19 @@ private:
     /// @brief 按可用宽度切换文本区排列方向
     /// @return 无返回值
     void updateResponsiveLayout();
+    /// @brief 根据实际可用空间为原文和译文分配默认比例
+    /// @return 无返回值
+    void distributeTextPaneSpace();
     /// @brief 同步翻译入口及旧译文提示
     /// @return 无返回值
     void updateSourceState();
     /// @brief 展开译文区并为两个文本区分配空间
     /// @return 无返回值
     void showTranslationPane();
+    /// @brief 按需展开翻译任务，收起时取消正在进行的请求并保留已有译文
+    /// @param visible 是否显示翻译区
+    /// @return 无返回值
+    void toggleTranslationPane(bool visible);
     /// @brief 通过应用剪贴板服务复制文本并显示结果
     /// @param text 待复制的完整文本
     /// @param translated 是否为译文
@@ -156,6 +163,9 @@ private:
     void resetTranslationUi();
 
     QWidget *m_titleBar = nullptr;
+    QWidget *m_translationActions = nullptr;
+    QPushButton *m_translationToggle = nullptr;
+    QPushButton *m_moreButton = nullptr;
     QLabel *m_titleIcon = nullptr;
     QLabel *m_languageLabel = nullptr;
     QLabel *m_statusLabel = nullptr;

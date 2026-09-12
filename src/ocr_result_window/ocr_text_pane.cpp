@@ -10,14 +10,37 @@
 #include <QClipboard>
 #include <QLabel>
 #include <QMenu>
+#include <QPaintEvent>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QStyle>
 #include <QTextBoundaryFinder>
 #include <QTextDocument>
 #include <QTextEdit>
+#include <QTimer>
 
 namespace markshot::shot {
+
+namespace {
+
+/// @brief 标题行空间不足时收起辅助统计，避免显示截断文本
+class StatisticsLabel final : public QLabel {
+public:
+    using QLabel::QLabel;
+
+protected:
+    /// @brief 【OCR】【文本统计】仅在统计内容能够完整显示时绘制文本
+    /// @param event 当前重绘事件
+    /// @return 无返回值
+    void paintEvent(QPaintEvent *event) override
+    {
+        if (width() >= sizeHint().width()) {
+            QLabel::paintEvent(event);
+        }
+    }
+};
+
+}
 
 OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidget *parent)
     : QFrame(parent)
@@ -25,7 +48,7 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     setProperty("ocrPane", true);
     setMinimumSize(180, 112);
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(10, 8, 10, 8);
+    layout->setContentsMargins(0, 2, 0, 0);
     layout->setSpacing(6);
     // 1. 【OCR】【分区高度】根据进度和提示的实际高度更新最小尺寸，避免挤压编辑器
     layout->setSizeConstraint(QLayout::SetMinimumSize);
@@ -33,14 +56,29 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     // 2. 【OCR】【文本分区】将复制入口与所属文本放在同一分区
     auto *header = new QHBoxLayout;
     header->setSpacing(6);
-    auto *label = new QLabel(title, this);
-    label->setProperty("role", QStringLiteral("sectionTitle"));
-    label->setFont(markshot::theme::uiFont(10, QFont::DemiBold));
-    header->addWidget(label, 1);
+    m_titleLabel = new QLabel(title, this);
+    m_titleLabel->setProperty("role", QStringLiteral("sectionTitle"));
+    m_titleLabel->setFont(markshot::theme::uiFont(10, QFont::DemiBold));
+    header->addWidget(m_titleLabel);
+    m_statistics = new StatisticsLabel(this);
+    m_statistics->setObjectName(QStringLiteral("ocrTextStatistics"));
+    m_statistics->setProperty("role", QStringLiteral("muted"));
+    m_statistics->setFont(markshot::theme::uiFont(9));
+    m_statistics->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    header->addWidget(m_statistics, 1);
+    m_undoButton = new QPushButton(this);
+    m_undoButton->setObjectName(QStringLiteral("ocrUndoButton"));
+    m_undoButton->setProperty("role", QStringLiteral("quiet"));
+    m_undoButton->setFixedSize(28, 28);
+    m_undoButton->setAccessibleName(MS_TR("Undo edit"));
+    m_undoButton->setToolTip(MS_TR("Undo edit") + QStringLiteral(" (Ctrl+Z)"));
+    m_undoButton->hide();
+    header->addWidget(m_undoButton);
     m_copyButton = new QPushButton(MS_TR("Copy"), this);
     m_copyButton->setObjectName(QStringLiteral("ocrCopyButton"));
     m_copyButton->setProperty("role", QStringLiteral("quiet"));
     m_copyButton->setFont(markshot::theme::uiFont(10));
+    m_copyButton->setMinimumWidth(68);
     m_copyButton->setIconSize(QSize(16, 16));
     m_copyButton->setToolTip(MS_TR("Copy all text"));
     m_copyButton->setAccessibleName(MS_TR("Copy %1").arg(title));
@@ -60,6 +98,8 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     m_editor->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_editor, &QTextEdit::customContextMenuRequested, this, &OcrTextPane::showEditorMenu);
     connect(m_editor, &QTextEdit::textChanged, this, &OcrTextPane::updateTextState);
+    connect(m_editor, &QTextEdit::undoAvailable, m_undoButton, &QWidget::setVisible);
+    connect(m_undoButton, &QPushButton::clicked, m_editor, &QTextEdit::undo);
     layout->addWidget(m_editor, 1);
 
     m_progress = new QProgressBar(this);
@@ -79,11 +119,9 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     m_notice->hide();
     layout->addWidget(m_notice);
 
-    m_statistics = new QLabel(this);
-    m_statistics->setObjectName(QStringLiteral("ocrTextStatistics"));
-    m_statistics->setProperty("role", QStringLiteral("muted"));
-    m_statistics->setFont(markshot::theme::uiFont(9));
-    layout->addWidget(m_statistics);
+    m_copyTimer = new QTimer(this);
+    m_copyTimer->setSingleShot(true);
+    connect(m_copyTimer, &QTimer::timeout, this, [this] { m_copyButton->setText(MS_TR("Copy")); });
     connect(m_copyButton, &QPushButton::clicked, this, [this] { emit copyRequested(text()); });
     updateTextState();
 }
@@ -117,11 +155,19 @@ void OcrTextPane::setBusy(bool busy)
 {
     m_progress->setVisible(busy);
     m_editor->setReadOnly(busy);
+    m_undoButton->setEnabled(!busy);
 }
 
 void OcrTextPane::refreshTheme()
 {
     m_copyButton->setIcon(ocrActionIcon(types::Action::Copy, palette().color(QPalette::ButtonText)));
+    m_undoButton->setIcon(ocrActionIcon(types::Action::Undo, palette().color(QPalette::ButtonText)));
+}
+
+void OcrTextPane::showCopyFeedback(bool success)
+{
+    m_copyButton->setText(success ? MS_TR("Copied") : MS_TR("Copy failed"));
+    m_copyTimer->start(1800);
 }
 
 void OcrTextPane::updateTextState()
@@ -134,7 +180,9 @@ void OcrTextPane::updateTextState()
         ++characters;
     }
     const int lines = current.isEmpty() ? 0 : current.count(QLatin1Char('\n')) + 1;
-    m_statistics->setText(MS_TR("%1 characters · %2 lines").arg(characters).arg(lines));
+    m_statistics->setText(MS_TR("%1 characters").arg(characters));
+    m_statistics->setToolTip(MS_TR("%1 characters · %2 lines").arg(characters).arg(lines));
+    m_titleLabel->setToolTip(m_statistics->toolTip());
     m_copyButton->setEnabled(!current.trimmed().isEmpty());
 }
 

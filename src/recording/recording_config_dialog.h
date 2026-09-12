@@ -8,11 +8,19 @@
 class QCheckBox;
 class QComboBox;
 class QLabel;
+class QFormLayout;
+class QPushButton;
 class QLineEdit;
 class QToolButton;
 class QWidget;
 
+namespace markshot::ui {
+class DisclosureSection;
+}
+
 namespace markshot::recording {
+
+struct RecordingDialogConfig;
 
 class RecordingConfigDialog final : public QDialog {
 public:
@@ -30,6 +38,19 @@ public:
     RecordingOptions options() const;
 
 private:
+    /// @brief 构建以录制范围为中心的准备界面，低频参数按需展开
+    /// @param persisted 最近保存的录制参数
+    /// @return 无返回值
+    void buildLayout(const RecordingDialogConfig &persisted);
+
+    /// @brief 将选项当前值汇总到折叠入口，避免重复平铺参数
+    /// @return 无返回值
+    void updateSummary();
+
+    /// @brief 按范围显示下一步操作和对应显示器信息
+    /// @return 无返回值
+    void updateScopeControls();
+
     /**
      * 打开输出文件选择对话框。
      * @return 无返回值。
@@ -98,8 +119,13 @@ private:
     QComboBox *m_container = nullptr;
     QComboBox *m_quality = nullptr;
     QLineEdit *m_outputPath = nullptr;
-    QToolButton *m_advancedToggle = nullptr;
-    QWidget *m_advancedPanel = nullptr;
+    QLabel *m_scopeHint = nullptr;
+    QPushButton *m_startButton = nullptr;
+    QWidget *m_audioRow = nullptr;
+    QWidget *m_audioDeviceRow = nullptr;
+    QFormLayout *m_optionsForm = nullptr;
+    markshot::ui::DisclosureSection *m_optionsSection = nullptr;
+    markshot::ui::DisclosureSection *m_outputSection = nullptr;
     bool m_outputPathTouched = false;
 };
 

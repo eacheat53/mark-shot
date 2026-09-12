@@ -247,8 +247,15 @@ qt_add_executable(mark-shot
     src/ui/color_history_store.h
     src/ui/icons.cpp
     src/ui/icons.h
+    src/ui/disclosure_section.cpp
+    src/ui/disclosure_section.h
+    src/ui/window_resize_grip.cpp
+    src/ui/window_resize_grip.h
+    src/ui/form_row_visibility.h
     src/ui/i18n.cpp
     src/ui/i18n.h
+    src/ui/i18n_task_windows.cpp
+    src/ui/i18n_task_windows.h
     src/ui/interface_language_config.cpp
     src/ui/interface_language_config.h
     src/ui/interface_theme_config.cpp

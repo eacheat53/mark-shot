@@ -1,6 +1,7 @@
 #include "settings/settings_page_storage.h"
 
 #include "settings/settings_ui_helpers.h"
+#include "ui/form_row_visibility.h"
 #include "ui/i18n.h"
 
 #include <QCheckBox>
@@ -83,9 +84,16 @@ SettingsPageStorage::SettingsPageStorage(QWidget *parent)
     m_clipboardMode->addItem(MS_TR("File URL"), static_cast<int>(ClipboardImageMode::Url));
     m_clipboardMode->addItem(MS_TR("Auto by Size"), static_cast<int>(ClipboardImageMode::Threshold));
     m_clipboardThresholdM = addSpinRow(clipboardForm, MS_TR("Threshold"), 1, 1024, QStringLiteral(" MiB"));
+    // 1. 【设置】【剪贴板选项】阈值只与按大小自动选择模式有关
+    const auto updateThreshold = [this, clipboardForm] {
+        markshot::ui::setFormRowVisible(clipboardForm, m_clipboardThresholdM,
+            m_clipboardMode->currentData().toInt() == static_cast<int>(ClipboardImageMode::Threshold));
+    };
+    connect(m_clipboardMode, &QComboBox::currentIndexChanged, this, updateThreshold);
+    updateThreshold();
     layout->addWidget(clipboardCard);
 
-    QFrame *exportCard = createSettingsCard(MS_TR("Screenshot Export Appearance"),
+    QFrame *exportCard = createAdvancedSettingsCard(MS_TR("Screenshot Export Appearance"),
                                             MS_TR("Add a macOS-style transparent canvas and soft shadow to shared screenshots."),
                                             this);
     QFormLayout *exportForm = settingsCardForm(exportCard);
@@ -98,6 +106,16 @@ SettingsPageStorage::SettingsPageStorage(QWidget *parent)
     m_exportShadowOffsetY = addSpinRow(exportForm, MS_TR("Shadow Drop"), 0, 128, QStringLiteral(" px"));
     m_exportShadowOpacity = addDoubleRow(exportForm, MS_TR("Shadow Opacity"), 0.0, 1.0, 2);
     m_exportShadowOpacity->setSingleStep(0.05);
+    // 2. 【设置】【导出外观】启用外框后才显示尺寸与阴影细节，隐藏时保留原值
+    const auto updateAppearance = [this, exportForm] {
+        const QList<QWidget *> fields{m_exportPadding, m_exportCornerRadius,
+                                       m_exportShadowRadius, m_exportShadowOffsetY, m_exportShadowOpacity};
+        for (QWidget *field : fields) {
+            markshot::ui::setFormRowVisible(exportForm, field, m_exportImageFrameEnabled->isChecked());
+        }
+    };
+    connect(m_exportImageFrameEnabled, &QCheckBox::toggled, this, updateAppearance);
+    updateAppearance();
     layout->addWidget(exportCard);
     layout->addStretch();
 }

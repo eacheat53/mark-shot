@@ -78,11 +78,8 @@ void OcrResultWindow::copyResultText(const QString &text, bool translated)
     if (text.trimmed().isEmpty()) {
         return;
     }
-    if (markshot::copyTextToClipboard(text)) {
-        showToast(translated ? MS_TR("Translation copied") : MS_TR("OCR text copied"));
-    } else {
-        showToast(MS_TR("Copy failed"));
-    }
+    OcrTextPane *pane = translated ? m_translationPane : m_sourcePane;
+    pane->showCopyFeedback(markshot::copyTextToClipboard(text));
 }
 
 void OcrResultWindow::showToast(const QString &text, int durationMs)
@@ -99,6 +96,10 @@ void OcrResultWindow::updateSourceState()
     }
     const QString source = m_sourcePane->text().trimmed();
     m_translateButton->setEnabled(m_translationTask || !source.isEmpty());
+    if (m_translationToggle) {
+        m_translationToggle->setEnabled(!source.isEmpty() || m_translationToggle->isChecked()
+                                        || !m_translationPane->text().isEmpty());
+    }
 
     // 1. 【OCR】【译文状态】只比较本次翻译的原文和目标语言，不覆盖用户继续编辑的内容
     if (!m_translationTask && !m_translationFailed && !m_translatedSource.isEmpty()) {

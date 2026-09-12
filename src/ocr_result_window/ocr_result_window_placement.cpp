@@ -27,8 +27,13 @@ void OcrResultWindow::resizeEvent(QResizeEvent *event)
     if (!m_logicalGeometry.isValid()) {
         return;
     }
-    // 1. 【OCR】【窗口尺寸】调整大小后同步浮层边距，置顶切换继续使用实际尺寸
-    if (pinnedWindowHasLayerShellTop(this)) {
+    // 1. 【OCR】【窗口尺寸】平台回报可能滞后于拖动，避免将旧尺寸作为新请求反复提交
+    const bool layerShell = pinnedWindowHasLayerShellTop(this);
+    if (layerShell && event->spontaneous()) {
+        return;
+    }
+    // 2. 【OCR】【窗口尺寸】只提交应用内发起的浮层尺寸变化，置顶切换继续使用最新目标尺寸
+    if (layerShell) {
         m_logicalGeometry.setSize(size());
         syncPinnedWindowTopGeometry(this, m_logicalGeometry);
     } else {
@@ -80,7 +85,7 @@ bool OcrResultWindow::eventFilter(QObject *watched, QEvent *event)
 
 bool OcrResultWindow::titleControlContains(QPoint windowPoint) const
 {
-    for (QWidget *control : {m_pinButton, m_closeButton}) {
+    for (QWidget *control : {m_moreButton, m_pinButton, m_closeButton}) {
         const QRect bounds(control->mapTo(this, QPoint()), control->size());
         if (bounds.contains(windowPoint)) {
             return true;

@@ -22,12 +22,13 @@ protected:
     /// @return 无返回值
     void resizeEvent(QResizeEvent *event) override;
 
-private:
+public:
     /// @brief 展开或折叠原图预览
     /// @param expanded 是否显示缩略图
     /// @return 无返回值
     void setExpanded(bool expanded);
 
+private:
     /// @brief 将缓存图片缩放到预览区，不拉伸原始比例
     /// @return 无返回值
     void updatePreview();
