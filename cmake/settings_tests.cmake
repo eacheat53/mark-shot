@@ -28,3 +28,12 @@ target_link_libraries(mark-shot-settings-wheel-guard-test
         Qt6::Widgets
 )
 add_test(NAME settings-wheel-guard COMMAND mark-shot-settings-wheel-guard-test)
+
+qt_add_executable(mark-shot-settings-form-layout-test
+    tests/settings_form_layout_test.cpp
+    src/settings/settings_form_layout.cpp
+    src/settings/settings_form_layout.h
+)
+target_include_directories(mark-shot-settings-form-layout-test PRIVATE src)
+target_link_libraries(mark-shot-settings-form-layout-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+add_test(NAME settings-form-layout COMMAND mark-shot-settings-form-layout-test)

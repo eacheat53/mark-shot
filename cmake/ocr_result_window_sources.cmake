@@ -6,6 +6,7 @@ set(MARK_SHOT_OCR_WINDOW_SOURCES
     src/ocr_result_window/ocr_result_window_geometry.cpp
     src/ocr_result_window/ocr_result_window_geometry.h
     src/ocr_result_window/ocr_result_window_layout.cpp
+    src/ocr_result_window/ocr_result_window_views.cpp
     src/ocr_result_window/ocr_result_window_placement.cpp
     src/ocr_result_window/ocr_result_window_style.cpp
     src/ocr_result_window/ocr_result_window_style.h

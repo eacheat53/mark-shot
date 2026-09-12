@@ -15,6 +15,7 @@
 #include <cstdint>
 
 class QLabel;
+class QEnterEvent;
 class QKeyEvent;
 class QMouseEvent;
 class QPainter;
@@ -62,6 +63,10 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    /// @brief 进入窗口时清理已经结束的抓取并恢复悬停光标
+    /// @param event 指针进入事件
+    /// @return 无返回值
+    void enterEvent(QEnterEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -146,6 +151,10 @@ private:
     void setScrubPosition(int pos, bool followAtEnd);
     bool beginOverviewDrag(const QPoint &point);
     void updateOverviewDrag(const QPoint &point);
+    /// @brief 根据概览、区域握柄和当前抓取状态更新光标
+    /// @param point 指针在窗口内的位置
+    /// @return 无返回值
+    void updatePointerCursor(const QPoint &point);
 
     // Maps the captured region (global compositor coordinates) into this
     // overlay's local coordinate space.

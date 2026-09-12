@@ -64,7 +64,12 @@ public:
      * @return 无返回值。
      */
     void setCaptureScreen(QScreen *screen);
+    /// @brief 按截图尺寸配置指定屏幕上的图层窗口
+    /// @param screen 目标屏幕，可为空以使用默认屏幕
+    /// @return 图层窗口配置成功时返回 true
     bool configureLayerShell(QScreen *screen);
+    /// @brief 根据文字编辑状态调整图层并重新发布输入法光标位置
+    /// @return 无返回值
     void updateLayerShellForIme();
     void startFullscreenAnnotation();
     void setImageNavigationEnabled(bool enabled);
@@ -150,6 +155,8 @@ private:
     void initializePropertyFontPanel();
     void initializeShortcuts();
     void initializeTransientPanels();
+    /// @brief 创建内联文字编辑器并配置输入、样式与事件处理
+    /// @return 无返回值
     void initializeTextEditor();
     void initializeLaserTimer();
     void initializeWindowDetection(QVector<markshot::WindowInfo> windowInfos, bool enabled);
@@ -313,7 +320,13 @@ private:
     void toggleExtensionPanel();
     void hideAnnotationPropertyPanels();
     void hideTransientPanels();
+    /// @brief 按当前系统指针位置同步截图和标注光标
+    /// @return 无返回值
     void updateCursor();
+    /// @brief 根据当前事件位置及交互状态同步光标
+    /// @param widgetPoint 指针在窗口内的位置
+    /// @return 无返回值
+    void updatePointerCursor(QPointF widgetPoint);
     bool propertyComboPopupVisible() const;
     bool mouseOverUiWidget() const;
     void clearWheelPreview();
@@ -492,6 +505,7 @@ private:
     bool m_activeRecordingStopHovered = false;
     markshot::startup_hint::PanelAnchor m_startupHintAnchor = markshot::startup_hint::PanelAnchor::BottomLeft;
     bool m_dragging = false;
+    bool m_operationBusy = false;
     // Pointer input can arrive at the native refresh rate (200 Hz on some
     // Wayland displays). Keep selection geometry current for precision, but
     // coalesce expensive raster repaint requests to a bounded cadence.

@@ -59,3 +59,12 @@ qt_add_executable(mark-shot-window-resize-grip-test
 target_include_directories(mark-shot-window-resize-grip-test PRIVATE src)
 target_link_libraries(mark-shot-window-resize-grip-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
 add_test(NAME window-resize-grip COMMAND mark-shot-window-resize-grip-test)
+
+qt_add_executable(mark-shot-interaction-cursor-test
+    tests/interaction_cursor_test.cpp
+    src/ui/interaction_cursor.cpp
+    src/ui/interaction_cursor.h
+)
+target_include_directories(mark-shot-interaction-cursor-test PRIVATE src)
+target_link_libraries(mark-shot-interaction-cursor-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+add_test(NAME interaction-cursor COMMAND mark-shot-interaction-cursor-test)

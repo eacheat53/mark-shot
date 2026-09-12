@@ -3,6 +3,7 @@
 #include "shot_window_internal.h"
 
 #include <QImage>
+#include <QPointer>
 #include <QWidget>
 
 class QComboBox;
@@ -11,6 +12,8 @@ class QMouseEvent;
 class QPushButton;
 class QScreen;
 class QSplitter;
+class QStackedWidget;
+class QTabBar;
 class QTimer;
 
 namespace markshot::providers {
@@ -35,6 +38,10 @@ public:
     ~OcrResultWindow() override;
 
 protected:
+    /// @brief 捕获中断或隐藏时清理窗口拖动，重新进入时恢复悬停光标
+    /// @param event 窗口生命周期或指针事件
+    /// @return Qt 事件处理结果
+    bool event(QEvent *event) override;
     /// @brief 绘制透明窗口的主题背景与圆角边框
     /// @param event 绘制事件
     /// @return 无返回值
@@ -75,6 +82,18 @@ private:
     /// @param sourceImage 原始截图
     /// @return 无返回值
     void initializeUi(const QString &text, QImage sourceImage);
+    /// @brief 创建互斥的文本与原图页面，文本页面保留原文和译文编辑器
+    /// @param text 初始识别文本
+    /// @param sourceImage 原始截图
+    /// @return 承载页面的堆叠控件
+    QWidget *createContentViews(const QString &text, QImage sourceImage);
+    /// @brief 创建位于编辑区域上方的目标语言与翻译操作栏
+    /// @return 翻译操作栏控件
+    QWidget *createTranslationActions();
+    /// @brief 切换文本或原图页面并保留编辑焦点、分栏和滚动位置
+    /// @param index 页面下标，0 为文本，1 为原图
+    /// @return 无返回值
+    void setContentView(int index);
     /// @brief 应用当前明暗主题并更新图标配色
     /// @return 无返回值
     void applyTheme();
@@ -121,6 +140,9 @@ private:
     /// @param event 鼠标事件
     /// @return 成功结束时返回 true
     bool finishWindowDrag(QMouseEvent *event);
+    /// @brief 清理拖动状态、鼠标捕获和标题栏光标
+    /// @return 无返回值
+    void resetWindowDrag();
     /// @brief 切换并保存 OCR 窗口置顶状态
     /// @param alwaysOnTop 是否保持置顶
     /// @return 无返回值
@@ -171,6 +193,12 @@ private:
     QLabel *m_statusLabel = nullptr;
     QTimer *m_statusTimer = nullptr;
     QSplitter *m_splitter = nullptr;
+    QStackedWidget *m_contentViews = nullptr;
+    QTabBar *m_viewTabs = nullptr;
+    QPointer<QWidget> m_textViewFocus;
+    QPoint m_sourceScrollOffset;
+    QPoint m_translationScrollOffset;
+    QList<int> m_textPaneSizes;
     OcrTextPane *m_sourcePane = nullptr;
     OcrTextPane *m_translationPane = nullptr;
     QPushButton *m_translateButton = nullptr;

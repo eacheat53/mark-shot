@@ -149,63 +149,9 @@ void ShotWindow::mouseMoveEvent(QMouseEvent *event)
         return;
     }
 
-    if (m_mode == Mode::Editing && m_tool == Tool::Select && !m_dragging) {
-        if (selectedAnnotationIds().size() > 1) {
-            m_annotationDrag = selectedAnnotationsDragAt(imagePoint);
-            if (m_annotationDrag != SelectionDrag::None) {
-                updateCursor();
-                return;
-            }
-        } else if (m_selectedAnnotationId.has_value()) {
-            m_annotationDrag = annotationDragAt(imagePoint, *m_selectedAnnotationId);
-            if (m_annotationDrag != SelectionDrag::None) {
-                updateCursor();
-                return;
-            }
-        }
-        m_annotationDrag = annotationAt(imagePoint).has_value() ? SelectionDrag::Move : SelectionDrag::None;
-        updateCursor();
-        return;
-    }
-
-    if (m_mode == Mode::Editing && m_tool == Tool::Move && !m_fullscreenAnnotation && !m_dragging) {
-        if (m_selectionPointerDetached) {
-            setCursor(Qt::BlankCursor);
-            return;
-        }
-        const SelectionDrag hoverDrag = selectionDragAt(imagePoint);
-        switch (hoverDrag) {
-        case SelectionDrag::MagnifierSource:
-        case SelectionDrag::MagnifierLens:
-        case SelectionDrag::Rotate:
-        case SelectionDrag::LineControl:
-        case SelectionDrag::NumberTip:
-        case SelectionDrag::NumberBubble:
-            setCursor(Qt::SizeAllCursor);
-            break;
-        case SelectionDrag::Left:
-        case SelectionDrag::Right:
-            setCursor(Qt::SizeHorCursor);
-            break;
-        case SelectionDrag::Top:
-        case SelectionDrag::Bottom:
-            setCursor(Qt::SizeVerCursor);
-            break;
-        case SelectionDrag::TopLeft:
-        case SelectionDrag::BottomRight:
-            setCursor(Qt::SizeFDiagCursor);
-            break;
-        case SelectionDrag::TopRight:
-        case SelectionDrag::BottomLeft:
-            setCursor(Qt::SizeBDiagCursor);
-            break;
-        case SelectionDrag::Move:
-            setCursor(Qt::SizeAllCursor);
-            break;
-        case SelectionDrag::None:
-            setCursor(Qt::ArrowCursor);
-            break;
-        }
+    if (m_mode == Mode::Editing && !m_dragging
+        && (m_tool == Tool::Select || (m_tool == Tool::Move && !m_fullscreenAnnotation))) {
+        updatePointerCursor(event->position());
         return;
     }
 
@@ -413,7 +359,7 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
 
     if ((event->button() == Qt::LeftButton || event->button() == Qt::MiddleButton) && m_imagePanning) {
         m_imagePanning = false;
-        updateCursor();
+        updatePointerCursor(event->position());
         event->accept();
         return;
     }
@@ -428,7 +374,7 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
     }
     if (m_toolbarDragging) {
         m_toolbarDragging = false;
-        updateCursor();
+        updatePointerCursor(event->position());
         updateOpenWithPanelGeometry();
         updateExtensionPanelGeometry();
         updateAnnotationPropertyPanelGeometry();
@@ -439,7 +385,7 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
         m_annotationDrag = SelectionDrag::None;
         m_annotationHistoryCaptured = false;
         updateAnnotationPropertyPanel();
-        updateCursor();
+        updatePointerCursor(event->position());
         update();
         return;
     }
@@ -451,14 +397,14 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
                 m_annotationSelectionBoxActive = false;
                 m_annotationSelectionBox = {};
                 updateAnnotationPropertyPanel();
-                updateCursor();
+                updatePointerCursor(event->position());
                 update();
                 return;
             }
             m_imageSelected = false;
         }
         commitAnnotationSelectionBox();
-        updateCursor();
+        updatePointerCursor(event->position());
         update();
         return;
     }
@@ -537,7 +483,7 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
         m_selectionKeyboardAdjusting = false;
         attachSelectionPointer();
         revealSelectionInfo();
-        updateCursor();
+        updatePointerCursor(event->position());
         updateToolbarGeometry();
         updateActionToolbarGeometry();
         updateOpenWithPanelGeometry();
@@ -548,7 +494,7 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
 
     if (m_tool == Tool::Laser && m_laserDraft.has_value()) {
         commitLaserStroke();
-        updateCursor();
+        updatePointerCursor(event->position());
         update();
         return;
     }

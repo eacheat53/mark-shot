@@ -40,6 +40,8 @@ void RecordingConfigDialog::buildLayout(const RecordingDialogConfig &persisted)
     root->addLayout(header);
 
     auto *scroll = new QScrollArea(this);
+    m_contentScroll = scroll;
+    scroll->setObjectName(QStringLiteral("recordingContentScroll"));
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -151,6 +153,12 @@ void RecordingConfigDialog::buildLayout(const RecordingDialogConfig &persisted)
     m_optionsForm->addRow(MS_TR("Recording Backend"), m_backend);
     body->addWidget(m_optionsSection);
     body->addStretch();
+    for (auto *section : {m_outputSection, m_optionsSection}) {
+        connect(section, &markshot::ui::DisclosureSection::expandedChanged, this,
+            [this, section](bool expanded) {
+                scheduleContentResize(expanded ? section->content() : nullptr);
+            });
+    }
 
     auto *footer = new QHBoxLayout;
     footer->addStretch();

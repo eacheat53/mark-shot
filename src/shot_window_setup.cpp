@@ -428,7 +428,8 @@ void ShotWindow::initializeToolbar()
     toolbarGrip->setObjectName(QStringLiteral("toolbarGrip"));
     toolbarGrip->setFixedWidth(10);
     toolbarGrip->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    toolbarGrip->setCursor(Qt::SizeAllCursor);
+    toolbarGrip->setProperty("dragHandle", true);
+    toolbarGrip->setCursor(Qt::OpenHandCursor);
     toolbarGrip->setStyleSheet(
         QStringLiteral("QWidget#toolbarGrip {"
                        "  background-color: rgba(148,163,184,60);"
@@ -540,7 +541,8 @@ void ShotWindow::initializeActionToolbar()
     actionGrip->setObjectName(QStringLiteral("actionToolbarGrip"));
     actionGrip->setFixedHeight(10);
     actionGrip->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    actionGrip->setCursor(Qt::SizeAllCursor);
+    actionGrip->setProperty("dragHandle", true);
+    actionGrip->setCursor(Qt::OpenHandCursor);
     actionGrip->setStyleSheet(
         QStringLiteral("QWidget#actionToolbarGrip {"
                        "  background-color: rgba(148,163,184,60);"
@@ -663,26 +665,6 @@ void ShotWindow::initializeTransientPanels()
     updateColorPalettePreview();
 }
 
-void ShotWindow::initializeTextEditor()
-{
-    m_textEditor = new QTextEdit(this);
-    m_textEditor->setObjectName(QStringLiteral("textEditor"));
-    m_textEditor->setPlaceholderText(MS_TR("Type text"));
-    m_textEditor->setStyleSheet(markshot::theme::textEditorStyleSheet(QColor(94, 234, 212), QColor(0, 0, 0, 0), 24));
-    m_textEditor->setAcceptRichText(false);
-    m_textEditor->setTabChangesFocus(false);
-    m_textEditor->setFrameShape(QFrame::NoFrame);
-    m_textEditor->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_textEditor->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_textEditor->setAttribute(Qt::WA_InputMethodEnabled, true);
-    m_textEditor->viewport()->setAutoFillBackground(false);
-    m_textEditor->setToolTip(MS_TR("Enter inserts newline, click outside commits, Esc cancels"));
-    m_textEditor->hide();
-    m_textEditor->installEventFilter(this);
-    m_textEditor->viewport()->installEventFilter(this);
-    m_textEditor->setContextMenuPolicy(Qt::NoContextMenu);
-}
-
 void ShotWindow::initializeLaserTimer()
 {
     m_laserClock.start();
@@ -714,52 +696,6 @@ void ShotWindow::initializeWindowDetection(QVector<markshot::WindowInfo> windowI
             converted.zOrder = info.zOrder;
             m_windowInfos.append(converted);
         }
-    }
-}
-
-bool ShotWindow::configureLayerShell(QScreen *screen)
-{
-    const QSize desiredSize = m_sourceGeometry.isValid() && !m_sourceGeometry.isEmpty()
-        ? m_sourceGeometry.size()
-        : m_frozenFrame.size();
-    if (!desiredSize.isEmpty()) {
-        resize(desiredSize);
-    }
-
-    if (screen) {
-        setScreen(screen);
-    }
-
-    return markshot::layershell::configureOverlay(
-        this,
-        screen,
-        {QStringLiteral("dock"),
-         markshot::layershell::KeyboardInteractivity::Exclusive,
-         true,
-         true});
-}
-
-void ShotWindow::updateLayerShellForIme()
-{
-    const bool imeActive = m_textEditor && m_textEditor->isVisible();
-    markshot::layershell::setLayer(
-        this, imeActive ? markshot::layershell::Layer::Top : markshot::layershell::Layer::Overlay);
-    if (imeActive) {
-        // Layer change triggers an async wl_surface::configure roundtrip from
-        // the compositor. singleShot(0) defers the cursor-rectangle republish
-        // to the next event-loop tick. This is sufficient across mainstream
-        // compositors (KWin, wlroots, Smithay) because set_layer and
-        // set_cursor_rectangle share the same ordered wl_display connection,
-        // and compositors apply layer changes synchronously in their event
-        // source rather than deferring to render frame. Fallback if needed:
-        // hook LayerShellQt::Window::layerChanged signal.
-        QTimer::singleShot(0, this, [this]() {
-            if (m_textEditor && m_textEditor->isVisible()) {
-                if (QInputMethod *im = QGuiApplication::inputMethod()) {
-                    im->update(Qt::ImCursorRectangle);
-                }
-            }
-        });
     }
 }
 

@@ -141,6 +141,7 @@ void RecordingConfigDialog::updateVideoOnlyControls()
     const bool videoMode = m_mode == RecordingMode::Video;
     markshot::ui::setFormRowVisible(m_optionsForm, m_container, videoMode);
     markshot::ui::setFormRowVisible(m_optionsForm, m_quality, videoMode);
+    scheduleContentResize();
 }
 
 void RecordingConfigDialog::updateAudioControls()
@@ -161,6 +162,7 @@ void RecordingConfigDialog::updateAudioControls()
     m_audioRow->setVisible(videoMode);
     m_audioDeviceRow->setVisible(videoMode && m_audio->isEnabled() && m_audio->isChecked());
     m_audioDevice->setEnabled(m_audio->isEnabled() && m_audio->isChecked());
+    scheduleContentResize(m_audioDeviceRow->isVisible() ? m_audioDeviceRow : nullptr);
 }
 
 /**

@@ -293,6 +293,7 @@ void SettingsNavigation::buildHeader()
 void SettingsNavigation::buildList()
 {
     m_list = new QListWidget(this);
+    m_list->setProperty("actionList", true);
     m_list->setObjectName(QStringLiteral("settingsNavigation"));
     m_list->setFrameShape(QFrame::NoFrame);
     m_list->setFocusPolicy(Qt::StrongFocus);

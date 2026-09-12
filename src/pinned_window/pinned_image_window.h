@@ -77,6 +77,10 @@ protected:
     /// @brief 处理鼠标按下，启动文本选择、窗口拖动或边界缩放。
     /// @param event 鼠标事件。
     void mousePressEvent(QMouseEvent *event) override;
+    /// @brief 指针重新进入时清理已经结束的原生窗口拖动光标
+    /// @param event 指针进入事件
+    /// @return 无返回值
+    void enterEvent(QEnterEvent *event) override;
 
     /// @brief 处理鼠标移动，更新拖动、缩放、文本选择和光标。
     /// @param event 鼠标事件。
@@ -394,6 +398,7 @@ private:
     int m_selectionAnchor = -1;
     int m_selectionFocus = -1;
     bool m_selectingText = false;
+    bool m_moving = false;
     bool m_translationActive = false;
     bool m_translateAfterOcr = false;
     bool m_copyTextAfterOcr = false;

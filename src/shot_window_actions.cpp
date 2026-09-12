@@ -1,5 +1,8 @@
 #include "shot_window_module.h"
 
+#include <QScopedValueRollback>
+#include <QScopeGuard>
+
 #include "notifications/app_notifications.h"
 
 #include "app_config_store.h"
@@ -178,7 +181,10 @@ void ShotWindow::ocrCopySelection()
         return;
     }
 
-    QApplication::setOverrideCursor(Qt::WaitCursor);
+    // 【截图】【识别光标】先恢复任务状态再刷新指针，提前返回和嵌套调用都按作用域清理
+    const auto restoreCursor = qScopeGuard([this] { updateCursor(); });
+    const QScopedValueRollback<bool> busy(m_operationBusy, true);
+    updateCursor();
 
     // 1. 组装 OCR 请求，provider 优先链由工厂解析
     markshot::providers::OcrTaskRequest request;
@@ -210,7 +216,6 @@ void ShotWindow::ocrCopySelection()
         sourceImage.load(tempPath);
     }
     QFile::remove(tempPath);
-    QApplication::restoreOverrideCursor();
 
     if (taskResult.error == markshot::providers::TaskError::StartFailed) {
         showToast(config.ocrCommand.isEmpty()

@@ -261,13 +261,15 @@ On KDE Plasma Wayland, `pinnedWindow.alwaysOnTop` is applied through a session
 KWin script so the sticker stays above other windows. The window remains a
 normal xdg-toplevel, so dragging and resizing are unchanged.
 
-The OCR result window opens with the editable recognized text. **Translate**
-reveals the translation pane and target language controls, then starts a
-translation with the saved language. Each pane has its own copy action and
+The OCR result window opens with the editable recognized text. The **Text / Source image**
+tabs share one content area. The image scales to fit the window; returning to text
+restores edits, undo history, scroll positions, and pane sizes. **Translate** in the
+top bar reveals the translation pane, with language and translation controls above
+the editors, then starts a translation with the saved language. Each pane has its own copy action and
 shows an undo action after editing. Copy feedback appears on the corresponding
 button. Wide windows show both panes side by side; narrow windows stack them.
 Drag the divider to adjust their space, or use the bottom-right grip to resize
-the window. Open **More actions → Source image** to check the original screenshot.
+the window.
 
 A running translation can be canceled. **Hide translation** also cancels any
 pending request and retains the existing result. Editing the source or changing
@@ -373,7 +375,9 @@ for an entire display. In Video mode, enable **Record audio** to choose an input
 
 **Save to** shows the output file name; expand it to change the path. **Recording
 options** shows the current frame rate, format, and video quality; expand it for
-the detailed options, countdown, and capture backend. Switching between Video
+the detailed options, countdown, and capture backend. The window adjusts its height
+to fit expanded content. When screen space is limited, the options remain scrollable
+and the bottom actions stay visible. Switching between Video
 and GIF retains each mode's frame rate and the selected audio input. GIF hides
 audio and video-only controls. During recording, the compact control bar shows
 elapsed time and recording or paused status, with pause/resume and **Stop** actions.
@@ -382,8 +386,10 @@ elapsed time and recording or paused status, with pause/resume and **Stop** acti
 
 ## 9. Configuration & Backends
 
-Open **Settings** from the tray menu. Narrow windows replace the sidebar with a
-category selector. Advanced groups expand in place and retain their input when
+Open **Settings** from the tray menu. Labels and fields align across groups; numeric
+and shortcut fields use compact widths, and switch captions sit next to their
+checkboxes. Narrow windows replace the sidebar with a category selector and place
+labels above fields. Long labels and switch captions wrap to fit. Advanced groups expand in place and retain their input when
 collapsed. **Save** applies changes without closing the window and reports the
 result in the footer. **Undo changes** restores the most recently saved values
 while keeping the current page open. Pressing `Enter` in a single-line text field saves

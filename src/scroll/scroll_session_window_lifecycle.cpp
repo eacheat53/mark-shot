@@ -1,6 +1,8 @@
 
 #include "scroll/scroll_session_window_internal.h"
 
+#include <QCursor>
+
 namespace markshot::scroll {
 
 ScrollSessionWindow::ScrollSessionWindow(QRect globalGeometry,
@@ -135,9 +137,13 @@ void ScrollSessionWindow::buildControlBar()
     };
 
     m_axisButton = makeButton(makeControlIcon(ControlIcon::AxisVertical), MS_TR("Dir: Vertical"));
+    m_axisButton->setProperty("dragHandle", true);
+    m_axisButton->setCursor(Qt::OpenHandCursor);
     m_axisButton->installEventFilter(this);
 
     m_floatingAxisButton = new QPushButton(this);
+    m_floatingAxisButton->setProperty("dragHandle", true);
+    m_floatingAxisButton->setCursor(Qt::OpenHandCursor);
     m_floatingAxisButton->setProperty("role", QStringLiteral("secondary"));
     configureIconButton(m_floatingAxisButton,
                         makeControlIcon(ControlIcon::AxisVertical),
@@ -417,6 +423,7 @@ void ScrollSessionWindow::armAxisDrag(const QPoint &globalPos)
     m_axisDragging = false;
     m_axisDragStartGlobal = globalPos;
     m_axisDragStartGeometry = m_geometry.normalized();
+    updatePointerCursor(mapFromGlobal(globalPos));
 }
 
 bool ScrollSessionWindow::updateAxisDrag(const QPoint &globalPos)
@@ -445,7 +452,7 @@ bool ScrollSessionWindow::updateAxisDrag(const QPoint &globalPos)
         m_restoreMaskAfterPaint = false;
         m_statusText = MS_TR("Dragging region");
         refreshControlLabels();
-        setCursor(Qt::ClosedHandCursor);
+        updatePointerCursor(mapFromGlobal(globalPos));
     }
 
     const bool horizontal = m_stitcher.axis() == ScrollAxis::Horizontal;
@@ -485,7 +492,7 @@ bool ScrollSessionWindow::finishAxisDrag()
     const bool wasDragging = m_axisDragging;
     m_axisDragArmed = false;
     m_axisDragging = false;
-    unsetCursor();
+    updatePointerCursor(mapFromGlobal(QCursor::pos()));
 
     if (!wasDragging) {
         return false;

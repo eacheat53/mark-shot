@@ -18,7 +18,9 @@ void ScrollSessionWindow::resizeEvent(QResizeEvent *event)
 
 void ScrollSessionWindow::captureTick()
 {
-    if (m_paused || (m_panelOnlyWindow && m_axisDragging)) {
+    // 【滚动截图】【区域拖动】普通 Wayland 窗口采集时会隐藏握柄，按下后即暂停采集以保留捕获
+    const bool awaitingWindowDrag = m_axisDragArmed && isWaylandPlatform() && !m_layerShell;
+    if (m_paused || (m_panelOnlyWindow && m_axisDragging) || awaitingWindowDrag) {
         return;
     }
     if (m_captureTickActive) {

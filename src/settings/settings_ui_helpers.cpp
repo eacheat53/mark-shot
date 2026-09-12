@@ -1,4 +1,5 @@
 #include "settings/settings_ui_helpers.h"
+#include "settings/settings_form_layout.h"
 
 #include "ui/i18n.h"
 #include "ui/disclosure_section.h"
@@ -88,29 +89,13 @@ void showPlainTextEditContextMenu(QPlainTextEdit *edit, const QPoint &pos)
     menu.exec(edit->viewport()->mapToGlobal(pos));
 }
 
-/// @brief 为设置分组添加统一的响应式表单布局
-/// @param layout 需要加入表单的分组布局
-/// @return 无返回值
-void addSettingsForm(QVBoxLayout *layout)
-{
-    auto *form = new QFormLayout;
-    form->setObjectName(QStringLiteral("settingsCardForm"));
-    form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    form->setFormAlignment(Qt::AlignTop);
-    form->setRowWrapPolicy(QFormLayout::WrapLongRows);
-    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-    form->setHorizontalSpacing(18);
-    form->setVerticalSpacing(10);
-    layout->addLayout(form);
-}
-
 } // namespace
 
 QVBoxLayout *createSettingsPageLayout(QWidget *parent)
 {
     auto *layout = new QVBoxLayout(parent);
-    layout->setContentsMargins(22, 18, 22, 18);
-    layout->setSpacing(22);
+    layout->setContentsMargins(20, 16, 20, 16);
+    layout->setSpacing(18);
     return layout;
 }
 
@@ -129,7 +114,7 @@ QFrame *createSettingsCard(const QString &title, const QString &description, QWi
     titleLabel->setAccessibleDescription(description);
     layout->addWidget(titleLabel);
 
-    addSettingsForm(layout);
+    createSettingsFormLayout(layout);
     return card;
 }
 
@@ -146,7 +131,7 @@ QFrame *createAdvancedSettingsCard(const QString &title, const QString &descript
         help->setWordWrap(true);
         layout->addWidget(help);
     }
-    addSettingsForm(layout);
+    createSettingsFormLayout(layout);
     return section;
 }
 
@@ -157,13 +142,14 @@ QFormLayout *settingsCardForm(QFrame *card)
 
 QCheckBox *addSwitchRow(QFormLayout *form, const QString &label, const QString &description)
 {
-    auto *box = new QCheckBox;
+    auto *box = new QCheckBox(label);
+    box->setProperty("settingsSwitchLabel", label);
     box->setAccessibleName(label);
     box->setAccessibleDescription(description);
     box->setToolTip(description);
     box->setMinimumHeight(28);
     box->setCursor(Qt::PointingHandCursor);
-    form->addRow(label, box);
+    form->addRow(box);
     return box;
 }
 
@@ -200,6 +186,7 @@ QSpinBox *addSpinRow(QFormLayout *form, const QString &label, int minimum, int m
     spin->setAccessibleName(label);
     spin->setRange(minimum, maximum);
     spin->setSuffix(suffix);
+    spin->setMaximumWidth(144);
     spin->setContextMenuPolicy(Qt::NoContextMenu);
     form->addRow(label, spin);
     return spin;
@@ -211,6 +198,7 @@ QDoubleSpinBox *addDoubleRow(QFormLayout *form, const QString &label, double min
     spin->setAccessibleName(label);
     spin->setRange(minimum, maximum);
     spin->setDecimals(decimals);
+    spin->setMaximumWidth(144);
     spin->setContextMenuPolicy(Qt::NoContextMenu);
     form->addRow(label, spin);
     return spin;
@@ -222,6 +210,7 @@ QComboBox *addComboRow(QFormLayout *form, const QString &label)
     combo->setAccessibleName(label);
     combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
     combo->setMinimumContentsLength(8);
+    combo->setMaximumWidth(360);
     combo->setCursor(Qt::PointingHandCursor);
     combo->setContextMenuPolicy(Qt::NoContextMenu);
     form->addRow(label, combo);
@@ -232,6 +221,7 @@ QKeySequenceEdit *addShortcutRow(QFormLayout *form, const QString &label)
 {
     auto *edit = new QKeySequenceEdit;
     edit->setAccessibleName(label);
+    edit->setMaximumWidth(280);
     edit->setContextMenuPolicy(Qt::NoContextMenu);
     if (auto *le = edit->findChild<QLineEdit *>()) {
         le->setContextMenuPolicy(Qt::NoContextMenu);

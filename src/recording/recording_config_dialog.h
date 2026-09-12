@@ -11,6 +11,8 @@ class QLabel;
 class QFormLayout;
 class QPushButton;
 class QLineEdit;
+class QScrollArea;
+class QShowEvent;
 class QToolButton;
 class QWidget;
 
@@ -37,6 +39,12 @@ public:
      */
     RecordingOptions options() const;
 
+protected:
+    /// @brief 显示录制配置时按当前选项调整窗口高度
+    /// @param event 窗口显示事件
+    /// @return 无返回值
+    void showEvent(QShowEvent *event) override;
+
 private:
     /// @brief 构建以录制范围为中心的准备界面，低频参数按需展开
     /// @param persisted 最近保存的录制参数
@@ -50,6 +58,15 @@ private:
     /// @brief 按范围显示下一步操作和对应显示器信息
     /// @return 无返回值
     void updateScopeControls();
+
+    /// @brief 合并选项显隐变化，等待布局更新后调整窗口
+    /// @param reveal 需要滚动到可见区域的展开内容，可为空
+    /// @return 无返回值
+    void scheduleContentResize(QWidget *reveal = nullptr);
+
+    /// @brief 在当前屏幕范围内容纳选项，屏幕不足时定位展开内容
+    /// @return 无返回值
+    void fitExpandedContent();
 
     /**
      * 打开输出文件选择对话框。
@@ -123,10 +140,13 @@ private:
     QPushButton *m_startButton = nullptr;
     QWidget *m_audioRow = nullptr;
     QWidget *m_audioDeviceRow = nullptr;
+    QScrollArea *m_contentScroll = nullptr;
+    QWidget *m_pendingReveal = nullptr;
     QFormLayout *m_optionsForm = nullptr;
     markshot::ui::DisclosureSection *m_optionsSection = nullptr;
     markshot::ui::DisclosureSection *m_outputSection = nullptr;
     bool m_outputPathTouched = false;
+    bool m_contentResizePending = false;
 };
 
 }  // namespace markshot::recording

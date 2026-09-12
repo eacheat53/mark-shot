@@ -10,6 +10,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QEnterEvent>
 #include <QContextMenuEvent>
 #include <QCursor>
 #include <QDateTime>
@@ -246,6 +247,7 @@ void PinnedImageWindow::mousePressEvent(QMouseEvent *event)
         }
 
         clearTextSelection();
+        m_moving = true;
         m_dragOffset = event->globalPosition().toPoint() - pinnedTopLeft();
         setCursor(Qt::ClosedHandCursor);
         if (m_config.alwaysOnTop && pinnedWindowHasLayerShellTop(this)) {
@@ -266,6 +268,10 @@ void PinnedImageWindow::mousePressEvent(QMouseEvent *event)
 
 void PinnedImageWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    if (!event->buttons().testFlag(Qt::LeftButton)) {
+        m_moving = false;
+        m_selectingText = false;
+    }
     if (continueResizeDrag(event)) {
         event->accept();
         return;
@@ -303,6 +309,7 @@ void PinnedImageWindow::mouseMoveEvent(QMouseEvent *event)
 void PinnedImageWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        m_moving = false;
         if (isPinnedResizeDirection(m_resizeDrag.direction)) {
             finishResizeDrag(event->position());
             event->accept();
@@ -319,6 +326,16 @@ void PinnedImageWindow::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
     QWidget::mouseReleaseEvent(event);
+}
+
+void PinnedImageWindow::enterEvent(QEnterEvent *event)
+{
+    if (!QApplication::mouseButtons().testFlag(Qt::LeftButton)) {
+        m_moving = false;
+        m_selectingText = false;
+    }
+    updateCursorForPosition(event->position());
+    QWidget::enterEvent(event);
 }
 
 void PinnedImageWindow::wheelEvent(QWheelEvent *event)

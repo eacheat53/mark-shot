@@ -36,6 +36,7 @@ set(MARK_SHOT_RECORDING_SOURCES
     src/recording/recording_config_dialog.cpp
     src/recording/recording_config_dialog.h
     src/recording/recording_config_layout.cpp
+    src/recording/recording_config_geometry.cpp
     src/recording/recording_config_options.cpp
     src/recording/recording_config_options.h
     src/recording/recording_dialog_config.cpp

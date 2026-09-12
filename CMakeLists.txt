@@ -249,6 +249,8 @@ qt_add_executable(mark-shot
     src/ui/icons.h
     src/ui/disclosure_section.cpp
     src/ui/disclosure_section.h
+    src/ui/interaction_cursor.cpp
+    src/ui/interaction_cursor.h
     src/ui/window_resize_grip.cpp
     src/ui/window_resize_grip.h
     src/ui/form_row_visibility.h

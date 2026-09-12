@@ -1,5 +1,25 @@
 #include "shot_window_module.h"
 
+void ShotWindow::initializeTextEditor()
+{
+    m_textEditor = new QTextEdit(this);
+    m_textEditor->setObjectName(QStringLiteral("textEditor"));
+    m_textEditor->setPlaceholderText(MS_TR("Type text"));
+    m_textEditor->setStyleSheet(markshot::theme::textEditorStyleSheet(QColor(94, 234, 212), QColor(0, 0, 0, 0), 24));
+    m_textEditor->setAcceptRichText(false);
+    m_textEditor->setTabChangesFocus(false);
+    m_textEditor->setFrameShape(QFrame::NoFrame);
+    m_textEditor->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_textEditor->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_textEditor->setAttribute(Qt::WA_InputMethodEnabled, true);
+    m_textEditor->viewport()->setAutoFillBackground(false);
+    m_textEditor->setToolTip(MS_TR("Enter inserts newline, click outside commits, Esc cancels"));
+    m_textEditor->hide();
+    m_textEditor->installEventFilter(this);
+    m_textEditor->viewport()->installEventFilter(this);
+    m_textEditor->setContextMenuPolicy(Qt::NoContextMenu);
+}
+
 /**
  * 在指定图像坐标开始创建文字标注。
  * @param imagePoint 文字编辑器在图像中的起始坐标。

@@ -16,9 +16,19 @@
 #include <QShowEvent>
 #include <QSignalBlocker>
 #include <QTimer>
+#include <QTabBar>
 #include <QWindow>
 
 namespace markshot::shot {
+
+bool OcrResultWindow::event(QEvent *event)
+{
+    if (event->type() == QEvent::UngrabMouse || event->type() == QEvent::Hide
+        || (event->type() == QEvent::Enter && !QApplication::mouseButtons().testFlag(Qt::LeftButton))) {
+        resetWindowDrag();
+    }
+    return QWidget::event(event);
+}
 
 void OcrResultWindow::resizeEvent(QResizeEvent *event)
 {
@@ -70,13 +80,19 @@ void OcrResultWindow::mouseReleaseEvent(QMouseEvent *event)
 bool OcrResultWindow::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched == m_titleBar) {
+        const bool pointerReleased = event->type() == QEvent::MouseMove
+            ? !static_cast<QMouseEvent *>(event)->buttons().testFlag(Qt::LeftButton)
+            : event->type() == QEvent::Enter && !QApplication::mouseButtons().testFlag(Qt::LeftButton);
+        if (pointerReleased) {
+            resetWindowDrag();
+        }
         if (event->type() == QEvent::MouseButtonPress) {
             return beginWindowDrag(static_cast<QMouseEvent *>(event));
         }
         if (event->type() == QEvent::MouseMove && m_dragging) {
             return updateWindowDrag(static_cast<QMouseEvent *>(event));
         }
-        if (event->type() == QEvent::MouseButtonRelease && m_dragging) {
+        if (event->type() == QEvent::MouseButtonRelease) {
             return finishWindowDrag(static_cast<QMouseEvent *>(event));
         }
     }
@@ -85,7 +101,11 @@ bool OcrResultWindow::eventFilter(QObject *watched, QEvent *event)
 
 bool OcrResultWindow::titleControlContains(QPoint windowPoint) const
 {
-    for (QWidget *control : {m_moreButton, m_pinButton, m_closeButton}) {
+    const QList<QWidget *> controls{m_viewTabs, m_translationToggle, m_moreButton, m_pinButton, m_closeButton};
+    for (QWidget *control : controls) {
+        if (!control->isVisible()) {
+            continue;
+        }
         const QRect bounds(control->mapTo(this, QPoint()), control->size());
         if (bounds.contains(windowPoint)) {
             return true;
@@ -141,6 +161,9 @@ void OcrResultWindow::recreateWindowSurface()
         }
     }
     if (resumeDrag) {
+        m_dragging = true;
+        m_titleBar->setCursor(Qt::ClosedHandCursor);
+        setCursor(Qt::ClosedHandCursor);
         grabMouse();
     }
 }
@@ -150,6 +173,7 @@ bool OcrResultWindow::beginWindowDrag(QMouseEvent *event)
     if (!event || event->button() != Qt::LeftButton) {
         return false;
     }
+    m_titleBar->setCursor(Qt::ClosedHandCursor);
 
     // 1. 【OCR】【窗口拖动】普通窗口优先交给窗口管理器移动
     const bool layerShell = pinnedWindowHasLayerShellTop(this);
@@ -164,7 +188,7 @@ bool OcrResultWindow::beginWindowDrag(QMouseEvent *event)
     }
     m_dragging = true;
     m_dragOffset = event->globalPosition().toPoint() - m_logicalGeometry.topLeft();
-    setCursor(Qt::SizeAllCursor);
+    setCursor(Qt::ClosedHandCursor);
     grabMouse();
     event->accept();
     return true;
@@ -172,7 +196,14 @@ bool OcrResultWindow::beginWindowDrag(QMouseEvent *event)
 
 bool OcrResultWindow::updateWindowDrag(QMouseEvent *event)
 {
-    if (!event || !m_dragging) {
+    if (!event) {
+        return false;
+    }
+    if (!event->buttons().testFlag(Qt::LeftButton)) {
+        resetWindowDrag();
+        return false;
+    }
+    if (!m_dragging) {
         return false;
     }
 
@@ -193,16 +224,29 @@ bool OcrResultWindow::updateWindowDrag(QMouseEvent *event)
 
 bool OcrResultWindow::finishWindowDrag(QMouseEvent *event)
 {
-    if (!event || event->button() != Qt::LeftButton || !m_dragging) {
+    if (!event || event->button() != Qt::LeftButton) {
         return false;
     }
+    const bool wasDragging = m_dragging;
+    resetWindowDrag();
+    if (!wasDragging) {
+        return false;
+    }
+    event->accept();
+    return true;
+}
+
+void OcrResultWindow::resetWindowDrag()
+{
+    // 【OCR】【拖动恢复】先清理状态，再释放捕获，避免 UngrabMouse 同步重入时继续移动
     m_dragging = false;
     if (QWidget::mouseGrabber() == this) {
         releaseMouse();
     }
+    if (m_titleBar) {
+        m_titleBar->setCursor(Qt::OpenHandCursor);
+    }
     unsetCursor();
-    event->accept();
-    return true;
 }
 
 void OcrResultWindow::setAlwaysOnTop(bool alwaysOnTop)
