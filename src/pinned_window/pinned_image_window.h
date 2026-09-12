@@ -40,6 +40,7 @@ struct TaskResult;
 namespace markshot::shot {
 
 class PinnedNativeResize;
+class PinnedLayerShellDragPreview;
 
 /// @brief 提供置顶图片显示、文本识别、文本选择、翻译和边界缩放的窗口。
 class PinnedImageWindow final : public QWidget {
@@ -109,6 +110,25 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
+    /// @brief 绘制完整图片及覆盖层，供原窗口和拖动预览共同使用
+    /// @param painter 目标窗口的绘制器
+    /// @param viewport 目标窗口内的可见绘制区域
+    /// @return 无返回值
+    void paintImageContents(QPainter &painter, QRectF viewport);
+
+    /// @brief 为 layer-shell 拖动创建无输入预览，保持原窗口的输入坐标原点
+    /// @return 无返回值
+    void beginLayerShellDragPreview();
+
+    /// @brief 将预览的最终几何应用回原窗口，并在原图绘制后回收预览
+    /// @return 无返回值
+    void finishLayerShellDragPreview();
+
+    /// @brief 将固定输入窗口的局部坐标换算为当前图片可见区域内坐标
+    /// @param position 鼠标相对原始输入窗口的位置
+    /// @return 当前图片可见区域内的逻辑位置
+    QPointF pinnedLocalPointForInput(QPointF position) const;
+
     /// @brief 旋转当前置顶图片。
     /// @param degrees 旋转角度。
     void rotateImage(qreal degrees);
@@ -390,6 +410,10 @@ private:
     qreal m_scale = 1.0;
     QRect m_logicalGeometry;
     QRect m_layerShellVisibleGeometry;
+    QRect m_layerShellDragInputGeometry;
+    PinnedLayerShellDragPreview *m_layerShellDragPreview = nullptr;
+    bool m_layerShellDragPreviewActive = false;
+    bool m_layerShellScreenRebindInProgress = false;
     QPoint m_layerShellContentOffset;
     QPoint m_dragOffset;
     PinnedResizeDragState m_resizeDrag;

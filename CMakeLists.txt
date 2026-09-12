@@ -203,11 +203,14 @@ qt_add_executable(mark-shot
     src/pinned_window/pinned_image_window.h
     src/pinned_window/pinned_image_window_geometry.cpp
     src/pinned_window/pinned_image_window_layer_shell.cpp
+    src/pinned_window/pinned_image_window_paint.cpp
     src/pinned_window/pinned_image_window_ocr.cpp
     src/pinned_window/pinned_image_window_text_selection.cpp
     src/pinned_window/pinned_image_window_translation.cpp
     src/pinned_window/pinned_layer_shell_geometry.cpp
     src/pinned_window/pinned_layer_shell_geometry.h
+    src/pinned_window/pinned_layer_shell_drag_preview.cpp
+    src/pinned_window/pinned_layer_shell_drag_preview.h
     src/pinned_window/pinned_layer_shell_screen_binding.cpp
     src/pinned_window/pinned_layer_shell_screen_binding.h
     src/pinned_window/pinned_resize_controller.cpp
@@ -434,6 +437,7 @@ include(CTest)
 if(BUILD_TESTING)
     include(cmake/core_tests.cmake)
     include(cmake/kde_pinned_window_tests.cmake)
+    include(cmake/hyprland_pinned_window_tests.cmake)
 endif()
 
 include(cmake/install_rules.cmake)

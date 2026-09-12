@@ -5,6 +5,7 @@
 #include "debug_log.h"
 #include "notifications/app_notifications.h"
 #include "pinned_window/pinned_native_resize.h"
+#include "pinned_window/pinned_layer_shell_drag_preview.h"
 #include "pinned_window_top.h"
 #include "translation_language_options.h"
 #include "ui/i18n.h"
@@ -23,8 +24,6 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
-#include <QPen>
 #include <QScreen>
 #include <QTimer>
 #include <QTransform>
@@ -99,6 +98,9 @@ PinnedImageWindow::PinnedImageWindow(QImage image, std::optional<QPoint> initial
     setWindowTitle(MS_TR("Pinned Mark Shot"));
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    if (m_config.alwaysOnTop && pinnedWindowUsesLayerShellTop()) {
+        setAttribute(Qt::WA_TranslucentBackground);
+    }
     Qt::WindowFlags flags = Qt::Window | Qt::FramelessWindowHint;
     if (m_config.alwaysOnTop) {
         flags |= Qt::WindowStaysOnTopHint;
@@ -143,14 +145,23 @@ PinnedImageWindow::PinnedImageWindow(QImage image, std::optional<QPoint> initial
 
 PinnedImageWindow::~PinnedImageWindow()
 {
+    delete m_layerShellDragPreview;
     cancelTranslation();
     cancelOcr();
 }
 
 bool PinnedImageWindow::event(QEvent *event)
 {
-    if (event->type() == QEvent::Hide && m_nativeResize && m_nativeResize->isActive()) {
+    if (event->type() == QEvent::Hide && !m_layerShellScreenRebindInProgress) {
+        // 1. 【钉图】【拖动收尾】隐藏时结束输入状态，也清理等待原图绘制的最后一帧预览
+        m_moving = false;
+        m_selectingText = false;
         finishResizeDrag(QPointF(-1, -1));
+        if (m_layerShellDragPreview) {
+            m_layerShellDragPreview->hide();
+            m_layerShellDragPreview->deleteLater();
+            m_layerShellDragPreview = nullptr;
+        }
     }
     const bool shouldRaise = event->type() == QEvent::WindowDeactivate
         || event->type() == QEvent::ActivationChange
@@ -160,74 +171,6 @@ bool PinnedImageWindow::event(QEvent *event)
         schedulePinnedWindowRaise();
     }
     return handled;
-}
-
-void PinnedImageWindow::paintEvent(QPaintEvent *)
-{
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    const QRectF imageRect = displayedImageRect();
-    painter.drawPixmap(imageRect, m_pixmap, QRectF(QPointF(0.0, 0.0), QSizeF(m_pixmap.size())));
-    if (m_translationActive) {
-        drawTranslationOverlay(painter);
-    }
-
-    auto drawBorder = [this, &painter, &imageRect] {
-        if (!m_config.borderEnabled || !m_config.borderColor.isValid() || m_config.borderWidth <= 0.0) {
-            return;
-        }
-        painter.save();
-        painter.setRenderHint(QPainter::Antialiasing, false);
-        painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(m_config.borderColor, m_config.borderWidth));
-        const qreal inset = m_config.borderWidth / 2.0;
-        painter.drawRect(imageRect.adjusted(inset, inset, -inset, -inset));
-        painter.restore();
-    };
-
-    if (!hasTextSelection()) {
-        drawBorder();
-        return;
-    }
-
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(Qt::NoPen);
-    const auto [first, last] = selectionRange();
-    const QVector<OcrToken> &tokens = activeTokens();
-    // 相邻词的 OCR 检测框之间有缝隙、首尾还常常互相重叠：逐框绘制半透明
-    // 高亮会出现断续的空隙和重叠处颜色加深。这里把选中的词框按行合并成
-    // 连续条带，全部并入一条路径后一次填充，效果与浏览器文本选中一致。
-    QPainterPath selectionPath;
-    selectionPath.setFillRule(Qt::WindingFill);
-    QRectF lineBand;
-    const auto flushLineBand = [this, &selectionPath, &lineBand] {
-        if (!lineBand.isNull()) {
-            selectionPath.addRect(imageToWidget(lineBand).intersected(QRectF(rect())));
-            lineBand = QRectF();
-        }
-    };
-    for (int i = first; i <= last; ++i) {
-        const QRectF tokenRect = selectionImageRectForToken(tokens.at(i));
-        if (tokenRect.isEmpty()) {
-            continue;
-        }
-        if (lineBand.isNull()) {
-            lineBand = tokenRect;
-            continue;
-        }
-        // 垂直方向重叠超过较矮框一半即视为同一行，合并进当前条带
-        const qreal overlapHeight = std::min(lineBand.bottom(), tokenRect.bottom())
-            - std::max(lineBand.top(), tokenRect.top());
-        if (overlapHeight >= std::min(lineBand.height(), tokenRect.height()) * 0.5) {
-            lineBand = lineBand.united(tokenRect);
-        } else {
-            flushLineBand();
-            lineBand = tokenRect;
-        }
-    }
-    flushLineBand();
-    painter.fillPath(selectionPath, QColor(72, 132, 245, 96));
-    drawBorder();
 }
 
 void PinnedImageWindow::mousePressEvent(QMouseEvent *event)
@@ -256,6 +199,7 @@ void PinnedImageWindow::mousePressEvent(QMouseEvent *event)
         m_dragOffset = event->globalPosition().toPoint() - pinnedTopLeft();
         setCursor(Qt::ClosedHandCursor);
         if (m_config.alwaysOnTop && pinnedWindowHasLayerShellTop(this)) {
+            beginLayerShellDragPreview();
             event->accept();
             return;
         }
@@ -273,9 +217,13 @@ void PinnedImageWindow::mousePressEvent(QMouseEvent *event)
 
 void PinnedImageWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    const QPointF cursorPosition = pinnedLocalPointForInput(event->position());
     if (!event->buttons().testFlag(Qt::LeftButton)) {
         m_moving = false;
         m_selectingText = false;
+        if (!isPinnedResizeDirection(m_resizeDrag.direction)) {
+            finishLayerShellDragPreview();
+        }
     }
     if (continueResizeDrag(event)) {
         event->accept();
@@ -307,26 +255,28 @@ void PinnedImageWindow::mouseMoveEvent(QMouseEvent *event)
         return;
     }
 
-    updateCursorForPosition(event->position());
+    updateCursorForPosition(cursorPosition);
     QWidget::mouseMoveEvent(event);
 }
 
 void PinnedImageWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        const QPointF cursorPosition = pinnedLocalPointForInput(event->position());
         m_moving = false;
         if (isPinnedResizeDirection(m_resizeDrag.direction)) {
-            finishResizeDrag(event->position());
+            finishResizeDrag(cursorPosition);
             event->accept();
             return;
         }
+        finishLayerShellDragPreview();
         if (m_selectingText) {
             m_selectingText = false;
-            updateCursorForPosition(event->position());
+            updateCursorForPosition(cursorPosition);
             event->accept();
             return;
         }
-        updateCursorForPosition(event->position());
+        updateCursorForPosition(cursorPosition);
         event->accept();
         return;
     }
@@ -335,14 +285,16 @@ void PinnedImageWindow::mouseReleaseEvent(QMouseEvent *event)
 
 void PinnedImageWindow::enterEvent(QEnterEvent *event)
 {
+    const QPointF cursorPosition = pinnedLocalPointForInput(event->position());
     if (!QApplication::mouseButtons().testFlag(Qt::LeftButton)) {
         m_moving = false;
         m_selectingText = false;
         if (m_nativeResize && m_nativeResize->isActive()) {
-            finishResizeDrag(event->position());
+            finishResizeDrag(cursorPosition);
         }
+        finishLayerShellDragPreview();
     }
-    updateCursorForPosition(event->position());
+    updateCursorForPosition(cursorPosition);
     QWidget::enterEvent(event);
 }
 
@@ -362,7 +314,10 @@ void PinnedImageWindow::wheelEvent(QWheelEvent *event)
     const qreal factor = std::pow(1.08, wheelSteps);
     resizeByScale(m_scale * factor,
                   logicalGlobalPointForLocalAnchor(event->position(), event->globalPosition().toPoint()),
-                  event->position());
+                  pinnedLocalPointForInput(event->position()));
+    if (m_moving) {
+        m_dragOffset = event->globalPosition().toPoint() - pinnedTopLeft();
+    }
     event->accept();
 }
 
@@ -508,7 +463,7 @@ void PinnedImageWindow::saveImageAs()
 
 void PinnedImageWindow::raisePinnedWindow()
 {
-    if (!m_config.alwaysOnTop) {
+    if (!m_config.alwaysOnTop || m_layerShellDragPreviewActive) {
         return;
     }
     raisePinnedWindowOnPlatform(this);
