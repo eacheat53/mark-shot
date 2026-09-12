@@ -91,6 +91,10 @@ signals:
     void sessionCancelRequested();
 
 protected:
+    /// @brief 在实际输入处理后同步光标，并处理抓取中断
+    /// @param event 窗口收到的 Qt 事件
+    /// @return Qt 是否已处理当前事件
+    bool event(QEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
@@ -125,13 +129,14 @@ private:
     /// @brief 更新选区调整后的附属控件和画面
     /// @return 无返回值
     void refreshAdjustedSelection();
-    /// @brief 绘制选区创建及再次调整时的放大镜和软件指针
+    /// @brief 绘制选区创建及再次调整时的放大镜
     /// @param painter 当前绘制器
     /// @return 无返回值
     void drawSelectionAdjustmentOverlay(QPainter &painter) const;
 
     using Mode = markshot::shot::types::Mode;
     using StartupTool = markshot::shot::types::StartupTool;
+    using WheelPreview = markshot::shot::types::WheelPreview;
 
 public:
     using ArrowStyle = markshot::shot::types::ArrowStyle;
@@ -327,8 +332,27 @@ private:
     /// @param widgetPoint 指针在窗口内的位置
     /// @return 无返回值
     void updatePointerCursor(QPointF widgetPoint);
+    /// @brief 结束中断的指针操作，撤去未提交草稿并恢复抓取控件状态
+    /// @return 无返回值
+    void cancelPointerInteraction();
+    /// @brief 判断软件指针当前是否确实会绘制到画面
+    /// @return 当前存在有效软件指针时返回 true
+    bool selectionPointerVisible() const;
     bool propertyComboPopupVisible() const;
-    bool mouseOverUiWidget() const;
+    /// @brief 判断事件位置是否位于由子控件处理的界面区域
+    /// @param widgetPoint 指针在窗口内的位置
+    /// @return 子控件负责该位置时返回 true
+    bool mouseOverUiWidget(QPointF widgetPoint) const;
+    /// @brief 显示指定预览并启动独立的自动结束定时器
+    /// @param widgetPoint 预览热点的窗口内位置
+    /// @param preview 工具尺寸预览或图像缩放提示
+    /// @return 无返回值
+    void startWheelPreview(QPointF widgetPoint, WheelPreview preview);
+    /// @brief 判断预览是否处于有效时间和可交互的画布区域
+    /// @return 当前可以显示预览时返回 true
+    bool wheelPreviewVisible() const;
+    /// @brief 清除预览并立即恢复当前位置的光标
+    /// @return 无返回值
     void clearWheelPreview();
     void updateColorPaletteGeometry(QPoint anchor);
     void updateColorPalettePreview();
@@ -519,11 +543,13 @@ private:
     bool m_actionToolbarUserPlaced = false;
     bool m_committingText = false;
     bool m_showSelectionInfo = false;
-    bool m_showWheelPreview = false;
+    WheelPreview m_wheelPreview = WheelPreview::None;
     QElapsedTimer m_selectionInfoTimer;
     QElapsedTimer m_ctrlTapTimer;
     QPointF m_wheelPreviewPosition;
     QElapsedTimer m_wheelPreviewTimer;
+    QTimer *m_wheelPreviewHideTimer = nullptr;
+    quint64 m_pointerInteractionSerial = 0;
     qreal m_annotationWidthWheelRemainder = 0.0;
     int m_annotationWidthWheelContext = 0;
     QElapsedTimer m_laserClock;

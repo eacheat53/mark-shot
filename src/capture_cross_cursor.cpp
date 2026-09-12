@@ -5,34 +5,43 @@
 
 namespace markshot::shot {
 
+void drawCaptureCrossCursor(QPainter &painter, QPointF position)
+{
+    // 1. 【标注】【十字光标】热点对齐像素中心，四臂留出中心取样区域
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.translate(QPointF(position.toPoint()) + QPointF(0.5, 0.5));
+    const QLineF arms[] = {
+        QLineF(-9, 0, -3, 0), QLineF(3, 0, 9, 0),
+        QLineF(0, -9, 0, -3), QLineF(0, 3, 0, 9),
+    };
+    // 2. 【标注】【十字光标】浅色细线与深色轮廓在明暗背景上保持一致，不依赖标注颜色
+    painter.setPen(QPen(QColor(17, 24, 39, 235), 3, Qt::SolidLine, Qt::RoundCap));
+    painter.drawLines(arms, 4);
+    painter.setPen(QPen(QColor(243, 244, 246), 1, Qt::SolidLine, Qt::RoundCap));
+    painter.drawLines(arms, 4);
+    painter.restore();
+}
+
+QRect captureCrossCursorRect(QPointF position)
+{
+    return QRect(position.toPoint() - QPoint(12, 12), QSize(25, 25));
+}
+
 QCursor captureCrossCursor()
 {
-    // 1. 使用 64 像素宽度，为 32 位硬件光标缓冲提供 256 字节行步长
-    constexpr int canvasSize = 64;
-    constexpr int crossSize = 33;
-    constexpr int offset = (canvasSize - crossSize) / 2;
-    constexpr int center = crossSize / 2;
-    QPixmap pixmap(canvasSize, canvasSize);
-    pixmap.fill(Qt::transparent);
-
-    // 2. 保留原图案的裁剪范围，避免方形笔帽随画布扩大而伸长
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.translate(offset, offset);
-    painter.setClipRect(QRect(0, 0, crossSize, crossSize));
-    painter.setPen(QPen(QColor(15, 23, 42, 235), 5, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center, 0, center, crossSize - 1);
-    painter.drawLine(0, center, crossSize - 1, center);
-    painter.setPen(QPen(QColor(255, 255, 255, 245), 3, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center, 0, center, crossSize - 1);
-    painter.drawLine(0, center, crossSize - 1, center);
-    painter.setPen(QPen(QColor(45, 212, 191, 255), 1, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center, 0, center, crossSize - 1);
-    painter.drawLine(0, center, crossSize - 1, center);
-    painter.end();
-
-    // 3. 热点随图案平移，保持选择位置与十字交点一致
-    return QCursor(pixmap, offset + center, offset + center);
+    // 1. 【标注】【十字光标】缓存图案并保留 256 字节行步长，避免硬件光标出现错位
+    static const QCursor cursor = [] {
+        constexpr int canvasSize = 64;
+        const QPoint hotspot(canvasSize / 2, canvasSize / 2);
+        QPixmap pixmap(canvasSize, canvasSize);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        drawCaptureCrossCursor(painter, hotspot);
+        painter.end();
+        return QCursor(pixmap, hotspot.x(), hotspot.y());
+    }();
+    return cursor;
 }
 
 }

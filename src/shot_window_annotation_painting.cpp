@@ -279,58 +279,6 @@ void ShotWindow::drawMarker(QPainter &painter, const Annotation &annotation, boo
     painter.restore();
 }
 
-void ShotWindow::drawWheelPreview(QPainter &painter)
-{
-    if (!m_showWheelPreview || !m_wheelPreviewTimer.isValid() || m_wheelPreviewTimer.elapsed() > 900) {
-        m_showWheelPreview = false;
-        updateCursor();
-        return;
-    }
-
-    if (wheelZoomsImage()) {
-        const QString zoomText = QStringLiteral("%1%").arg(qRound(m_imageZoom * 100.0));
-        painter.save();
-        painter.setRenderHint(QPainter::Antialiasing, true);
-        painter.setFont(markshot::theme::uiFont(12, QFont::DemiBold));
-        const QFontMetrics metrics(painter.font());
-        const QRectF textBounds = metrics.boundingRect(zoomText);
-        QRectF bubble(m_wheelPreviewPosition.x() + 14.0,
-                      m_wheelPreviewPosition.y() + 14.0,
-                      textBounds.width() + 24.0,
-                      textBounds.height() + 14.0);
-        bubble.moveLeft(std::min<qreal>(bubble.left(), width() - bubble.width() - 8.0));
-        bubble.moveTop(std::min<qreal>(bubble.top(), height() - bubble.height() - 8.0));
-        bubble.moveLeft(std::max<qreal>(8.0, bubble.left()));
-        bubble.moveTop(std::max<qreal>(8.0, bubble.top()));
-
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(8, 13, 19, 230));
-        painter.drawRoundedRect(bubble, 10.0, 10.0);
-        painter.setPen(QColor(204, 251, 241, 245));
-        painter.drawText(bubble, Qt::AlignCenter, zoomText);
-        painter.restore();
-        return;
-    }
-
-    const qreal size = std::clamp(currentToolPreviewSize(), 2.0, 96.0);
-    QRectF preview(m_wheelPreviewPosition.x() - size / 2.0,
-                   m_wheelPreviewPosition.y() - size / 2.0,
-                   size,
-                   size);
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing,
-                          m_tool == Tool::Number || m_tool == Tool::Magnifier);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(m_currentColor);
-    if (m_tool == Tool::Number || m_tool == Tool::Magnifier) {
-        painter.drawEllipse(preview);
-    } else {
-        painter.drawRect(preview);
-    }
-    painter.restore();
-}
-
 void ShotWindow::drawLaserStroke(QPainter &painter, const LaserStroke &stroke, bool widgetCoordinates, qreal opacity) const
 {
     if (stroke.points.size() < 2 || opacity <= 0.0) {

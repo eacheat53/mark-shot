@@ -12,41 +12,10 @@ bool ShotWindow::propertyComboPopupVisible() const
         || (m_propertyNumberStyleCombo && m_propertyNumberStyleCombo->view()->isVisible());
 }
 
-bool ShotWindow::mouseOverUiWidget() const
+bool ShotWindow::mouseOverUiWidget(QPointF widgetPoint) const
 {
-    const QPoint pos = mapFromGlobal(QCursor::pos());
-    for (QWidget *w = childAt(pos); w && w != this; w = w->parentWidget()) {
-        const QString name = w->objectName();
-        if (name == QLatin1String("toolbarGrip")
-            || name == QLatin1String("actionToolbarGrip")) {
-            return false;
-        }
-        if (name == QLatin1String("shotToolbar")
-            || name == QLatin1String("actionToolbar")
-            || name == QLatin1String("annotationPropertyPanel")
-            || name == QLatin1String("propertyColorDialogPanel")
-            || name == QLatin1String("propertyFontPanel")
-            || name == QLatin1String("openWithPanel")
-            || name == QLatin1String("extensionPanel")
-            || name == QLatin1String("colorPalette")
-            || name == QLatin1String("shapeMarkerPopup")
-            || qobject_cast<const QComboBox *>(w)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void ShotWindow::clearWheelPreview()
-{
-    if (!m_showWheelPreview) {
-        return;
-    }
-
-    m_showWheelPreview = false;
-    m_wheelPreviewTimer.invalidate();
-    updateCursor();
-    update();
+    // 1. 【标注】【界面命中】使用当前事件位置，子控件保留按钮、文本及握柄自身的光标
+    return childAt(widgetPoint.toPoint()) != nullptr;
 }
 
 bool ShotWindow::hasUsableSelection() const

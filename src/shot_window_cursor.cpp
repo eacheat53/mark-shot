@@ -4,11 +4,24 @@ using namespace markshot::shot;
 
 namespace {
 
+/// @brief 将画面中的缩放方向匹配到最近的系统方向光标
+/// @param degrees 以向右为零度、顺时针为正方向的角度
+/// @return 水平、垂直或对角方向的缩放光标
+Qt::CursorShape resizeCursorForAngle(qreal degrees)
+{
+    constexpr std::array<Qt::CursorShape, 4> cursors = {
+        Qt::SizeHorCursor, Qt::SizeFDiagCursor, Qt::SizeVerCursor, Qt::SizeBDiagCursor,
+    };
+    const int index = (qRound(degrees / 45.0) % 4 + 4) % 4;
+    return cursors.at(index);
+}
+
 /// @brief 将选区或标注操作映射为缩放、抓取或控制点光标
 /// @param drag 当前命中的操作类型
 /// @param pressed 是否正在按住指针执行操作
+/// @param rotationDegrees 单个标注相对画面的旋转角度，选区和分组使用零度
 /// @return 与操作方向和拖动状态一致的系统光标
-Qt::CursorShape cursorForSelectionDrag(types::SelectionDrag drag, bool pressed)
+Qt::CursorShape cursorForSelectionDrag(types::SelectionDrag drag, bool pressed, qreal rotationDegrees = 0.0)
 {
     using Drag = types::SelectionDrag;
     switch (drag) {
@@ -16,22 +29,22 @@ Qt::CursorShape cursorForSelectionDrag(types::SelectionDrag drag, bool pressed)
     case Drag::Right:
     case Drag::MagnifierSourceLeft:
     case Drag::MagnifierSourceRight:
-        return Qt::SizeHorCursor;
+        return resizeCursorForAngle(rotationDegrees);
     case Drag::Top:
     case Drag::Bottom:
     case Drag::MagnifierSourceTop:
     case Drag::MagnifierSourceBottom:
-        return Qt::SizeVerCursor;
+        return resizeCursorForAngle(rotationDegrees + 90.0);
     case Drag::TopLeft:
     case Drag::BottomRight:
     case Drag::MagnifierSourceTopLeft:
     case Drag::MagnifierSourceBottomRight:
-        return Qt::SizeFDiagCursor;
+        return resizeCursorForAngle(rotationDegrees + 45.0);
     case Drag::TopRight:
     case Drag::BottomLeft:
     case Drag::MagnifierSourceTopRight:
     case Drag::MagnifierSourceBottomLeft:
-        return Qt::SizeBDiagCursor;
+        return resizeCursorForAngle(rotationDegrees + 135.0);
     case Drag::LineControl:
     case Drag::LineStart:
     case Drag::LineEnd:
@@ -56,6 +69,13 @@ void ShotWindow::updateCursor()
     updatePointerCursor(mapFromGlobal(QCursor::pos()));
 }
 
+bool ShotWindow::selectionPointerVisible() const
+{
+    return m_selectionPointerDetached && m_startupHoverValid && !m_operationBusy
+        && (m_mode == Mode::Selecting
+            || (canAdjustSelection() && (m_dragging || m_selectionKeyboardAdjusting)));
+}
+
 void ShotWindow::updatePointerCursor(QPointF widgetPoint)
 {
     if (m_operationBusy) {
@@ -67,27 +87,31 @@ void ShotWindow::updatePointerCursor(QPointF widgetPoint)
         setCursor(Qt::ClosedHandCursor);
         return;
     }
-    if (m_activeRecordingStopHovered && !m_dragging) {
+    if (!m_dragging && ((m_mode == Mode::Selecting && m_activeRecordingStopHovered)
+        || (m_tool == Tool::Select && selectedAnnotationDeleteButtonRect().contains(widgetPoint)))) {
         setCursor(Qt::PointingHandCursor);
         return;
     }
-    if (!m_dragging && (propertyComboPopupVisible() || mouseOverUiWidget())) {
+    if (!m_dragging && (propertyComboPopupVisible() || mouseOverUiWidget(widgetPoint))) {
         setCursor(Qt::ArrowCursor);
         return;
     }
 
-    // 2. 【截图】【精确定位】软件指针或画笔预览接管显示时才隐藏系统光标
-    if (((m_mode == Mode::Selecting || canAdjustSelection()) && m_selectionPointerDetached)
-        || (m_showWheelPreview && m_wheelPreviewTimer.isValid() && m_wheelPreviewTimer.elapsed() <= 900)) {
+    // 2. 【截图】【精确定位】只有画面中实际绘制的软件指针才接管系统光标
+    if (selectionPointerVisible()) {
         setCursor(Qt::BlankCursor);
+        return;
+    }
+    if (!m_dragging && !m_frozenImageRect.contains(widgetPoint)) {
+        setCursor(Qt::ArrowCursor);
         return;
     }
     if (m_mode == Mode::Selecting) {
         setCursor(captureCrossCursor());
         return;
     }
-    if (!m_dragging && !m_frozenImageRect.contains(widgetPoint)) {
-        setCursor(Qt::ArrowCursor);
+    if (!m_dragging && m_wheelPreview == WheelPreview::ToolSize && wheelPreviewVisible()) {
+        setCursor(Qt::BlankCursor);
         return;
     }
 
@@ -99,27 +123,32 @@ void ShotWindow::updatePointerCursor(QPointF widgetPoint)
         return;
     }
     if (m_tool == Tool::Select) {
+        if (m_dragging && m_annotationSelectionBoxActive) {
+            setCursor(captureCrossCursor());
+            return;
+        }
+        SelectionDrag drag = m_dragging ? m_annotationDrag : SelectionDrag::None;
+        const QVector<int> selectedIds = selectedAnnotationIds();
+        const Annotation *selected = selectedIds.size() == 1 ? annotationById(selectedIds.first()) : nullptr;
         if (!m_dragging) {
-            m_annotationDrag = SelectionDrag::None;
-            if (selectedAnnotationIds().size() > 1) {
-                m_annotationDrag = selectedAnnotationsDragAt(imagePoint);
-            } else if (m_selectedAnnotationId.has_value()) {
-                m_annotationDrag = annotationDragAt(imagePoint, *m_selectedAnnotationId);
+            if (selectedIds.size() > 1) {
+                drag = selectedAnnotationsDragAt(imagePoint);
+            } else if (selected) {
+                drag = annotationDragAt(imagePoint, selected->id);
             }
-            if (m_annotationDrag == SelectionDrag::None && annotationAt(imagePoint).has_value()) {
-                m_annotationDrag = SelectionDrag::Move;
+            if (drag == SelectionDrag::None && annotationAt(imagePoint).has_value()) {
+                drag = SelectionDrag::Move;
             }
         }
-        if (m_annotationDrag != SelectionDrag::None) {
-            setCursor(cursorForSelectionDrag(m_annotationDrag, m_dragging));
-        } else if (m_imageNavigationEnabled && m_imageSelected) {
-            setCursor(Qt::OpenHandCursor);
-        } else {
-            setCursor(m_annotationSelectionBoxActive ? Qt::CrossCursor : Qt::ArrowCursor);
-        }
+        // 4. 【截图】【标注悬停】命中结果只决定光标，不改写正在进行的拖动状态
+        setCursor(cursorForSelectionDrag(drag, m_dragging, selected ? selected->rotationDegrees : 0.0));
+        return;
+    }
+    if (m_tool == Tool::Move) {
+        setCursor(Qt::ArrowCursor);
         return;
     }
 
-    // 4. 【截图】【标注工具】文字使用插入光标，其余绘制工具使用精确十字
+    // 5. 【截图】【标注工具】文字使用插入光标，其余绘制工具使用统一十字
     setCursor(m_tool == Tool::Text ? Qt::IBeamCursor : captureCrossCursor());
 }

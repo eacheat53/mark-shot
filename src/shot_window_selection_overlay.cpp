@@ -29,11 +29,6 @@ void ShotWindow::drawSelectionAdjustmentOverlay(QPainter &painter) const
             .arg(qRound(m_startupHoverImagePoint.x())).arg(qRound(m_startupHoverImagePoint.y()));
         drawSelectionLoupe(painter, m_frozenFrame, layout, caption);
     }
-
-    // 2. 【截图】【选区放大镜】系统拒绝移动指针时显示软件十字线
-    if (m_selectionPointerDetached) {
-        drawSelectionPointer(painter, widgetPoint);
-    }
 }
 
 /**

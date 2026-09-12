@@ -279,6 +279,7 @@ add_test(NAME selection-cursor-nudge COMMAND mark-shot-selection-cursor-nudge-te
 
 qt_add_executable(mark-shot-selection-loupe-test
     tests/selection_loupe_test.cpp
+    src/capture_cross_cursor.cpp
     src/selection_loupe.cpp
     src/selection_loupe.h
 )

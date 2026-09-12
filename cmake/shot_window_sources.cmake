@@ -20,6 +20,8 @@ set(MARK_SHOT_WINDOW_SOURCES
     src/shot_window_double_click_action.cpp
     src/shot_window_hit_testing.cpp
     src/shot_window_cursor.cpp
+    src/shot_window_cursor_preview.cpp
+    src/shot_window_pointer_events.cpp
     src/shot_window_layer_shell.cpp
     src/shot_window_input.cpp
     src/shot_window_input_shortcuts.cpp

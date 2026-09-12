@@ -427,6 +427,10 @@ QVector<ShotWindow::ExtensionCommand> ShotWindow::extensionCommands(QString *err
     return commands;
 }
 
+/// @brief 分发工具栏抓取和内联编辑器输入，维护控件自身的交互状态
+/// @param watched 当前接收事件的控件
+/// @param event 控件事件
+/// @return 当前事件已由窗口处理时返回 true
 bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
 {
     // 【截图】【光标事件】设置光标会同步发出 CursorChange，不能再次进入握柄更新
@@ -474,6 +478,7 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
                 if (!eventWidget) {
                     return false;
                 }
+                ++m_pointerInteractionSerial;
                 m_dragging = true;
                 m_toolbarDragging = true;
                 m_toolbarDragStart = eventWidget->mapTo(this, mouseEvent->pos());
@@ -527,6 +532,15 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
         }
     }
 
+    if (m_textEditor && m_textEditor->isVisible()
+        && (watched == m_textEditor || watched == m_textEditor->viewport())
+        && event->type() == QEvent::ShortcutOverride
+        && static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape) {
+        // 1. 【标注】【文字编辑】保留取消编辑按键，避免窗口快捷键提前消费 Escape
+        event->accept();
+        return true;
+    }
+
     if (watched == m_textEditor && event->type() == QEvent::KeyPress) {
         auto *keyEvent = static_cast<QKeyEvent *>(event);
         if (imageNavigationAvailable() && keyEvent->key() == Qt::Key_Control && !keyEvent->isAutoRepeat()) {
@@ -545,6 +559,8 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
             m_textEditor->clear();
             setFocus(Qt::OtherFocusReason);
             updateLayerShellForIme();
+            updateAnnotationPropertyPanel();
+            updateCursor();
             update();
             return true;
         }

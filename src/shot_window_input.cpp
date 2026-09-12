@@ -18,13 +18,12 @@ void ShotWindow::mouseMoveEvent(QMouseEvent *event)
         return;
     }
 
-    if (m_showWheelPreview && m_wheelPreviewTimer.isValid() && m_wheelPreviewTimer.elapsed() <= 900) {
+    if (m_wheelPreview != WheelPreview::None && m_wheelPreviewTimer.isValid()
+        && m_wheelPreviewTimer.elapsed() <= 900) {
         m_wheelPreviewPosition = event->position();
         update();
-    } else if (m_showWheelPreview) {
-        m_showWheelPreview = false;
-        updateCursor();
-        update();
+    } else if (m_wheelPreview != WheelPreview::None) {
+        clearWheelPreview();
     }
 
     if (updateStartupShortcutHintAnchor(event->position())) {
@@ -357,9 +356,11 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
 
-    if ((event->button() == Qt::LeftButton || event->button() == Qt::MiddleButton) && m_imagePanning) {
-        m_imagePanning = false;
-        updatePointerCursor(event->position());
+    if (m_imagePanning) {
+        if (event->button() == Qt::MiddleButton) {
+            m_imagePanning = false;
+            updatePointerCursor(event->position());
+        }
         event->accept();
         return;
     }
@@ -585,6 +586,7 @@ void ShotWindow::setTool(Tool tool)
     clearWheelPreview();
     commitAnnotationWidthWheelHistory();
     commitTextEditor();
+    cancelPointerInteraction();
     m_selectionDrag = SelectionDrag::None;
     m_annotationDrag = SelectionDrag::None;
     m_lineSkeletonDragPointIndex = -1;

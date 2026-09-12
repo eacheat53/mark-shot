@@ -122,6 +122,7 @@ void ShotWindow::commitTextEditor()
         m_editingTextAnnotationId.reset();
         m_committingText = false;
         updateAnnotationPropertyPanel();
+        updateCursor();
         update();
         return;
     }
@@ -150,6 +151,7 @@ void ShotWindow::commitTextEditor()
     }
 
     m_committingText = false;
+    updateCursor();
     update();
     persistAnnotationState();
 }
