@@ -18,6 +18,10 @@ target_compile_definitions(mark-shot-annotation-cursor-test PRIVATE "$<TARGET_PR
 target_link_libraries(mark-shot-annotation-cursor-test PRIVATE "$<TARGET_PROPERTY:mark-shot,LINK_LIBRARIES>" Qt6::Test)
 get_target_property(annotation_cursor_cxx_standard mark-shot CXX_STANDARD)
 set_target_properties(mark-shot-annotation-cursor-test PROPERTIES CXX_STANDARD ${annotation_cursor_cxx_standard})
+if(WIN32)
+    # 2. 【标注测试】【Windows 入口】同步主程序类型，为继承的 QT_NEEDS_QMAIN 定义链接 Qt 入口库
+    set_target_properties(mark-shot-annotation-cursor-test PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 add_dependencies(mark-shot-annotation-cursor-test mark-shot)
 add_test(NAME annotation-cursor COMMAND mark-shot-annotation-cursor-test)
 set_tests_properties(annotation-cursor PROPERTIES TIMEOUT 30

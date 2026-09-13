@@ -1,6 +1,7 @@
 #include "settings/settings_form_layout.h"
 
 #include <QCheckBox>
+#include <QFontMetrics>
 #include <QFormLayout>
 #include <QFrame>
 #include <QLabel>
@@ -88,8 +89,8 @@ private slots:
         QTRY_COMPARE(area.horizontalScrollBar()->maximum(), 0);
         QCOMPARE(box->accessibleName(), caption);
         box->setChecked(true);
-        // 3. 恢复宽视区后去除多余换行，选择状态保持不变
-        area.resize(760, 320);
+        // 3. 【设置测试】【换行恢复】按实际字体留足行宽，兼容无字体环境的替代字形
+        area.resize(qMax(760, box->fontMetrics().horizontalAdvance(caption) + 120), 320);
         QTRY_COMPARE(box->text(), caption);
         QVERIFY(box->isChecked());
     }
