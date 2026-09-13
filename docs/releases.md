@@ -1,5 +1,15 @@
 # Release Notes
 
+### 0.1.52
+
+- **OCR Result Window Redesign**: Recognized text and translation live in separate panes with per-pane copy and undo. **Translate** in the top bar reveals the translation pane, and the **Text / Source image** tabs share one content area that restores edits, undo history, and scroll positions. See the [user guide](user-guide.md).
+- **Streamlined Recording Dialog**: Save-to and recording options expand on demand, mode switches retain frame rate and audio input, and the dialog stays usable on small screens.
+- **Settings Form Layout**: Aligned labels and fields, compact numeric and shortcut widths, save without closing, undo to the last saved values, and Enter-to-save for single-line fields.
+- **Interaction Cursor States**: Hovering, moving, resizing, and width adjustment on annotations show the matching cursor, with a live size preview while adjusting width. See the [cursor guide](interaction-cursors.md).
+- **KDE Pinned Windows**: Always-on-top no longer leaks between stickers, and native resizing preserves the image aspect ratio and resize anchors. See the [KDE guide](kde-pinned-windows.md).
+- **Hyprland Pinned Image Dragging**: Pinned images follow the pointer with a live drag preview and rebind across outputs. See the [Hyprland guide](hyprland-pinned-windows.md).
+- **Compact OCR Windows**: Resizing an OCR result window to compact dimensions keeps its content.
+
 ### 0.1.51
 
 - **Translation Request Body Extensions**: `translation.extraBody` adds JSON fields to the top level of OpenAI-compatible translation requests, for both the built-in implementation and the plugin. The default is `{}`; `model`, `temperature`, and `messages` cannot be overridden. See the [configuration guide](configuration.md).

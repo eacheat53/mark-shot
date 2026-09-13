@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.52 - 2026-09-13
+
+### Features & Enhancements
+
+- **OCR Result Window Redesign**: The OCR result window now separates the editable recognized text and the translation into dedicated panes with per-pane copy and undo actions plus copy feedback on the buttons. **Translate** in the top bar reveals the translation pane and its language controls, and the **Text / Source image** tabs share one content area that restores edits, undo history, scroll positions, and pane sizes. Wide windows show both panes side by side, narrow windows stack them, and compact windows keep their content. See [docs/user-guide.md](docs/user-guide.md).
+- **Streamlined Recording Dialog**: The recording dialog keeps Video/GIF mode selection, display or region capture, and audio input in a compact layout. **Save to** and **Recording options** expand on demand, switching between Video and GIF retains each mode's frame rate and the selected audio input, and the window grows to fit expanded content while staying scrollable with visible bottom actions on small screens.
+- **Settings Form Layout**: Settings labels and fields align across groups, numeric and shortcut fields use compact widths, and switch captions sit next to their checkboxes. Narrow windows replace the sidebar with a category selector and place labels above fields, with long labels wrapping to fit. **Save** applies without closing, **Undo changes** restores the most recently saved values, and pressing `Enter` in a single-line field saves while keeping the window open.
+- **Interaction Cursor States**: Annotation editing now covers the complete cursor state machine. Hovering, moving, and resizing annotations show the matching cursor, and adjusting annotation width shows a live size preview beside the width cursor. See [docs/interaction-cursors.md](docs/interaction-cursors.md).
+
+### Bug Fixes
+
+- **KDE Pinned Windows**: The always-on-top KWin script now scopes to Mark Shot's own windows so pinned state no longer leaks between stickers, and resizing is handed to the window manager through native resize requests that preserve the image aspect ratio and resize anchors. See [docs/kde-pinned-windows.md](docs/kde-pinned-windows.md).
+- **Hyprland Pinned Image Dragging**: Dragging a pinned layer-shell image on Hyprland now follows the pointer with a live drag preview and rebinds to the target output, so images no longer jump or disappear while being moved. See [docs/hyprland-pinned-windows.md](docs/hyprland-pinned-windows.md).
+- **Compact OCR Windows**: Resizing an OCR result window to compact dimensions no longer drops its text, translation, or scroll state.
+
 ## 0.1.51 - 2026-09-06
 
 ### Features & Enhancements
