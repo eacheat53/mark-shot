@@ -28,7 +28,7 @@ QLineEdit *addSecretRow(QFormLayout *form, const QString &label, const QString &
 
 QFrame *createCloudTranslateCard(QWidget *parent, CloudTranslateCardWidgets *widgets)
 {
-    QFrame *card = createSettingsCard(
+    QFrame *card = createAdvancedSettingsCard(
         MS_TR("Cloud Translation Credentials"),
         MS_TR("Credentials for the Tencent, Baidu, and Youdao translation plugins. "
               "Leave a service empty to keep reading its credentials from environment variables."),

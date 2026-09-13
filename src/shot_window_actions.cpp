@@ -1,5 +1,8 @@
 #include "shot_window_module.h"
 
+#include <QScopedValueRollback>
+#include <QScopeGuard>
+
 #include "notifications/app_notifications.h"
 
 #include "app_config_store.h"
@@ -178,7 +181,10 @@ void ShotWindow::ocrCopySelection()
         return;
     }
 
-    QApplication::setOverrideCursor(Qt::WaitCursor);
+    // 【截图】【识别光标】先恢复任务状态再刷新指针，提前返回和嵌套调用都按作用域清理
+    const auto restoreCursor = qScopeGuard([this] { updateCursor(); });
+    const QScopedValueRollback<bool> busy(m_operationBusy, true);
+    updateCursor();
 
     // 1. 组装 OCR 请求，provider 优先链由工厂解析
     markshot::providers::OcrTaskRequest request;
@@ -203,8 +209,13 @@ void ShotWindow::ocrCopySelection()
     const markshot::providers::TaskResult taskResult = task->waitForResult();
     task->deleteLater();
 
+    // 3. 【OCR】【原图预览】在删除临时文件前保留实际识别图片
+    const bool showResultPanel = ocrResultPanelEnabled();
+    QImage sourceImage;
+    if (taskResult.ok && showResultPanel) {
+        sourceImage.load(tempPath);
+    }
     QFile::remove(tempPath);
-    QApplication::restoreOverrideCursor();
 
     if (taskResult.error == markshot::providers::TaskError::StartFailed) {
         showToast(config.ocrCommand.isEmpty()
@@ -246,8 +257,8 @@ void ShotWindow::ocrCopySelection()
 
     const QString result = markshot::ocr::tokensText(parsedOcr.tokens);
 
-    if (ocrResultPanelEnabled()) {
-        auto *window = createOcrResultWindow(result, targetScreen.data());
+    if (showResultPanel) {
+        auto *window = createOcrResultWindow(result, targetScreen.data(), std::move(sourceImage));
         window->show();
         window->raise();
         window->activateWindow();

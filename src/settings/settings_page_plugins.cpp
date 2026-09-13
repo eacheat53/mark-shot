@@ -260,7 +260,7 @@ void SettingsPagePlugins::buildProviderCard(QVBoxLayout *layout)
 
 void SettingsPagePlugins::buildDirectoriesCard(QVBoxLayout *layout)
 {
-    QFrame *card = createSettingsCard(MS_TR("Plugin Directories"),
+    QFrame *card = createAdvancedSettingsCard(MS_TR("Plugin Directories"),
                                       MS_TR("Provider plugins are loaded from these directories when Mark Shot starts."),
                                       this);
     QFormLayout *form = settingsCardForm(card);
@@ -283,7 +283,7 @@ void SettingsPagePlugins::buildDirectoriesCard(QVBoxLayout *layout)
 
 void SettingsPagePlugins::buildDiagnosticsCard(QVBoxLayout *layout)
 {
-    QFrame *card = createSettingsCard(MS_TR("Plugin Diagnostics"),
+    QFrame *card = createAdvancedSettingsCard(MS_TR("Plugin Diagnostics"),
                                       MS_TR("Inspect loaded provider plugins and reasons for unavailable plugins."),
                                       this);
     QFormLayout *form = settingsCardForm(card);

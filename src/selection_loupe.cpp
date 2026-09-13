@@ -1,5 +1,7 @@
 #include "selection_loupe.h"
 
+#include "capture_cross_cursor.h"
+
 #include <QColor>
 #include <QFont>
 #include <QFontMetrics>
@@ -153,25 +155,12 @@ void drawSelectionLoupe(QPainter &painter,
 
 void drawSelectionPointer(QPainter &painter, QPointF widgetPoint)
 {
-    const QPoint center = widgetPoint.toPoint();
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(QPen(QColor(15, 23, 42, 235), 5, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center.x(), center.y() - 16, center.x(), center.y() + 16);
-    painter.drawLine(center.x() - 16, center.y(), center.x() + 16, center.y());
-    painter.setPen(QPen(QColor(255, 255, 255, 245), 3, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center.x(), center.y() - 16, center.x(), center.y() + 16);
-    painter.drawLine(center.x() - 16, center.y(), center.x() + 16, center.y());
-    painter.setPen(QPen(QColor(45, 212, 191, 255), 1, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center.x(), center.y() - 16, center.x(), center.y() + 16);
-    painter.drawLine(center.x() - 16, center.y(), center.x() + 16, center.y());
-    painter.restore();
+    drawCaptureCrossCursor(painter, widgetPoint);
 }
 
 QRect selectionPointerDirtyRect(QPointF widgetPoint)
 {
-    const QPoint center = widgetPoint.toPoint();
-    return QRect(center.x() - 20, center.y() - 20, 41, 41);
+    return captureCrossCursorRect(widgetPoint);
 }
 
 }  // namespace markshot::shot

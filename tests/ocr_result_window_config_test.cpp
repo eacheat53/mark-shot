@@ -1,4 +1,4 @@
-#include "ocr_result_window_config.h"
+#include "ocr_result_window/ocr_result_window_config.h"
 
 #include <QtTest/QtTest>
 

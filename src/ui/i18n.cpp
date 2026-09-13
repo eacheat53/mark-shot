@@ -1,4 +1,5 @@
 #include "ui/i18n.h"
+#include "ui/i18n_task_windows.h"
 
 #include "app_config_store.h"
 #include "ui/interface_language_config.h"
@@ -227,9 +228,6 @@ const QHash<QString, QString> &chineseTable()
         {QStringLiteral("Failed to save pinned window setting."), QStringLiteral("保存置顶图片设置失败。")},
         {QStringLiteral("Failed to save pinned text selection setting."), QStringLiteral("保存置顶图片拖选设置失败。")},
         {QStringLiteral("OCR Result"), QStringLiteral("OCR 结果")},
-        {QStringLiteral("Review or edit the recognized text before copying."),
-         QStringLiteral("复制前可先检查或编辑识别结果。")},
-        {QStringLiteral("OCR text appears here"), QStringLiteral("OCR 文字会显示在这里")},
         {QStringLiteral("No text to translate"), QStringLiteral("没有可翻译的文字")},
         {QStringLiteral("Translation failed"), QStringLiteral("翻译失败")},
         {QStringLiteral("Translation failed: %1"), QStringLiteral("翻译失败：%1")},
@@ -689,6 +687,10 @@ Language language()
 QString translate(const QString &source)
 {
     if (g_language == Language::Chinese) {
+        const auto taskText = taskWindowChineseTable().constFind(source);
+        if (taskText != taskWindowChineseTable().constEnd()) {
+            return taskText.value();
+        }
         const auto it = chineseTable().constFind(source);
         if (it != chineseTable().constEnd()) {
             return it.value();

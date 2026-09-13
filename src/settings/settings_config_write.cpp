@@ -363,22 +363,8 @@ void writeAdvancedSettings(QJsonObject *root, const AdvancedSettings &settings)
 
 }  // namespace
 
-bool writeSettingsConfig(const SettingsConfig &config, QString *error)
+QJsonObject settingsConfigToJson(const SettingsConfig &config, QJsonObject root)
 {
-    if (error) {
-        error->clear();
-    }
-
-    bool ok = false;
-    QJsonObject root = readAppConfigRoot(&ok);
-    if (!ok) {
-        if (error) {
-            *error = MS_TR("Cannot read application config");
-        }
-        return false;
-    }
-
-    // 1. 写入 config.json 中的各设置分组
     writeGeneralSettings(&root, config.general);
     writeCaptureSettings(&root, config.capture);
     writeShortcutSettings(&root, config.shortcuts);
@@ -392,16 +378,35 @@ bool writeSettingsConfig(const SettingsConfig &config, QString *error)
                                                            config.pinned.translationProvider,
                                                            config.integrations.codeScanProvider});
     writeAdvancedSettings(&root, config.advanced);
-    if (!writeAppConfigRoot(root, error)) {
+    return root;
+}
+
+bool writeSettingsConfig(const SettingsConfig &config, QString *error)
+{
+    if (error) {
+        error->clear();
+    }
+
+    bool ok = false;
+    const QJsonObject root = readAppConfigRoot(&ok);
+    if (!ok) {
+        if (error) {
+            *error = MS_TR("Cannot read application config");
+        }
         return false;
     }
 
-    // 2. 同步系统开机启动项，失败时保留错误给设置弹窗展示
+    // 1. 【设置】【保存配置】复用配置值转换逻辑并保留未在设置页中编辑的字段
+    if (!writeAppConfigRoot(settingsConfigToJson(config, root), error)) {
+        return false;
+    }
+
+    // 2. 【设置】【同步启动项】同步系统开机启动项，失败时保留错误供界面展示
     if (!autostart::setEnabled(config.general.launchOnStartup, error)) {
         return false;
     }
 
-    // 3. 同步标注状态中的当前颜色，确保重启后默认颜色不回退
+    // 3. 【设置】【同步标注】同步当前颜色，确保重启后默认颜色不回退
     AnnotationState annotationState = loadAnnotationState();
     annotationState.currentColor = config.annotation.defaultColor;
     if (!saveAnnotationState(annotationState)) {

@@ -427,17 +427,49 @@ QVector<ShotWindow::ExtensionCommand> ShotWindow::extensionCommands(QString *err
     return commands;
 }
 
+/// @brief 分发工具栏抓取和内联编辑器输入，维护控件自身的交互状态
+/// @param watched 当前接收事件的控件
+/// @param event 控件事件
+/// @return 当前事件已由窗口处理时返回 true
 bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
 {
+    // 【截图】【光标事件】设置光标会同步发出 CursorChange，不能再次进入握柄更新
+    if (event->type() == QEvent::CursorChange) {
+        return false;
+    }
     if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::KeyPress) {
         clearWheelPreview();
     }
 
-    const bool isFullscreenMoveButton = m_fullscreenAnnotation
-        && watched->property("action").toString() == markshot::ui::actionName(Action::ToolMove);
+    const bool isMoveButton = watched->property("action").toString() == markshot::ui::actionName(Action::ToolMove);
+    const bool isFullscreenMoveButton = m_fullscreenAnnotation && isMoveButton;
+    if (isMoveButton && !m_fullscreenAnnotation && watched->property("dragHandle").toBool()) {
+        watched->setProperty("dragHandle", false);
+        if (auto *button = qobject_cast<QWidget *>(watched)) {
+            button->setCursor(button->isEnabled() ? Qt::PointingHandCursor : Qt::ArrowCursor);
+        }
+    }
     const bool isToolbarGrip = watched->objectName() == QStringLiteral("toolbarGrip");
     const bool isActionToolbarGrip = watched->objectName() == QStringLiteral("actionToolbarGrip");
     if (isFullscreenMoveButton || isToolbarGrip || isActionToolbarGrip) {
+        auto *handle = qobject_cast<QWidget *>(watched);
+        if (handle) {
+            handle->setProperty("dragHandle", true);
+            const bool interrupted = event->type() == QEvent::Hide || event->type() == QEvent::UngrabMouse
+                || !handle->isEnabled()
+                || (event->type() == QEvent::MouseMove
+                    && !(static_cast<QMouseEvent *>(event)->buttons() & Qt::LeftButton));
+            if (m_toolbarDragging && interrupted) {
+                m_toolbarDragging = false;
+                m_dragging = false;
+                updateCursor();
+            }
+            if (!handle->isEnabled()) {
+                handle->setCursor(Qt::ArrowCursor);
+                return false;
+            }
+            handle->setCursor(m_toolbarDragging ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
+        }
         QWidget *targetToolbar = isActionToolbarGrip ? m_actionToolbar : m_toolbar;
         if (event->type() == QEvent::MouseButtonPress) {
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
@@ -446,11 +478,13 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
                 if (!eventWidget) {
                     return false;
                 }
+                ++m_pointerInteractionSerial;
                 m_dragging = true;
                 m_toolbarDragging = true;
                 m_toolbarDragStart = eventWidget->mapTo(this, mouseEvent->pos());
                 m_toolbarBeforeDrag = targetToolbar->geometry();
-                setCursor(Qt::SizeAllCursor);
+                eventWidget->setCursor(Qt::ClosedHandCursor);
+                updateCursor();
                 return true;
             }
         } else if (event->type() == QEvent::MouseMove && m_toolbarDragging) {
@@ -476,6 +510,9 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
             if (mouseEvent->button() == Qt::LeftButton) {
                 m_dragging = false;
                 m_toolbarDragging = false;
+                if (handle) {
+                    handle->setCursor(Qt::OpenHandCursor);
+                }
                 updateCursor();
                 updateOpenWithPanelGeometry();
                 updateExtensionPanelGeometry();
@@ -493,6 +530,15 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
             showTextEditorContextMenu(m_textEditor->viewport()->mapToGlobal(mouseEvent->pos()));
             return true;
         }
+    }
+
+    if (m_textEditor && m_textEditor->isVisible()
+        && (watched == m_textEditor || watched == m_textEditor->viewport())
+        && event->type() == QEvent::ShortcutOverride
+        && static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape) {
+        // 1. 【标注】【文字编辑】保留取消编辑按键，避免窗口快捷键提前消费 Escape
+        event->accept();
+        return true;
     }
 
     if (watched == m_textEditor && event->type() == QEvent::KeyPress) {
@@ -513,6 +559,8 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
             m_textEditor->clear();
             setFocus(Qt::OtherFocusReason);
             updateLayerShellForIme();
+            updateAnnotationPropertyPanel();
+            updateCursor();
             update();
             return true;
         }
@@ -562,7 +610,7 @@ void ShotWindow::setStartupTool(StartupTool tool)
     if (m_startupColorPanel) {
         m_startupColorPanel->hide();
     }
-    setCursor(tool == StartupTool::Ruler ? QCursor(Qt::SizeAllCursor) : captureCrossCursor());
+    updateCursor();
     update();
 }
 
@@ -581,7 +629,7 @@ void ShotWindow::leaveStartupTool()
     if (m_startupColorPanel) {
         m_startupColorPanel->hide();
     }
-    setCursor(captureCrossCursor());
+    updateCursor();
     update();
 }
 

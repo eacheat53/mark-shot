@@ -4,134 +4,6 @@ namespace cfg = markshot::config;
 namespace shortcuts = markshot::shortcut;
 using namespace markshot::shot;
 
-void ShotWindow::updateCursor()
-{
-    // 悬停在录制中面板的停止按钮上时保持手型。updateCursor 会被多条
-    // 代码路径高频调用（运行时日志证实悬停后几毫秒内即被覆盖），因此
-    // 该交互状态必须在这里统一处理，而不是只在悬停切换时设置一次。
-    if (m_activeRecordingStopHovered) {
-        setCursor(Qt::PointingHandCursor);
-        return;
-    }
-
-    if (m_mode == Mode::Selecting && m_selectionPointerDetached) {
-        setCursor(Qt::BlankCursor);
-        return;
-    }
-
-    if (m_showWheelPreview && m_wheelPreviewTimer.isValid() && m_wheelPreviewTimer.elapsed() <= 900) {
-        setCursor(Qt::BlankCursor);
-        return;
-    }
-
-    if (m_imagePanning) {
-        setCursor(Qt::ClosedHandCursor);
-        return;
-    }
-
-    if (m_imageNavigationEnabled && m_tool == Tool::Select && m_imageSelected) {
-        setCursor(m_imagePanning ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
-        return;
-    }
-
-    if (propertyComboPopupVisible() || mouseOverUiWidget()) {
-        setCursor(Qt::ArrowCursor);
-        return;
-    }
-
-    if (m_tool == Tool::Move && !m_fullscreenAnnotation) {
-        switch (m_selectionDrag) {
-        case SelectionDrag::MagnifierSource:
-        case SelectionDrag::MagnifierLens:
-        case SelectionDrag::Rotate:
-        case SelectionDrag::LineControl:
-        case SelectionDrag::LineStart:
-        case SelectionDrag::LineEnd:
-        case SelectionDrag::NumberTip:
-        case SelectionDrag::NumberBubble:
-            setCursor(Qt::SizeAllCursor);
-            return;
-        case SelectionDrag::Left:
-        case SelectionDrag::Right:
-        case SelectionDrag::MagnifierSourceLeft:
-        case SelectionDrag::MagnifierSourceRight:
-            setCursor(Qt::SizeHorCursor);
-            return;
-        case SelectionDrag::Top:
-        case SelectionDrag::Bottom:
-        case SelectionDrag::MagnifierSourceTop:
-        case SelectionDrag::MagnifierSourceBottom:
-            setCursor(Qt::SizeVerCursor);
-            return;
-        case SelectionDrag::TopLeft:
-        case SelectionDrag::BottomRight:
-        case SelectionDrag::MagnifierSourceTopLeft:
-        case SelectionDrag::MagnifierSourceBottomRight:
-            setCursor(Qt::SizeFDiagCursor);
-            return;
-        case SelectionDrag::TopRight:
-        case SelectionDrag::BottomLeft:
-        case SelectionDrag::MagnifierSourceTopRight:
-        case SelectionDrag::MagnifierSourceBottomLeft:
-            setCursor(Qt::SizeBDiagCursor);
-            return;
-        case SelectionDrag::Move:
-            setCursor(Qt::SizeAllCursor);
-            return;
-        case SelectionDrag::None:
-            setCursor(Qt::ArrowCursor);
-            return;
-        }
-    }
-
-    if (m_tool == Tool::Select) {
-        switch (m_annotationDrag) {
-        case SelectionDrag::MagnifierSource:
-        case SelectionDrag::MagnifierLens:
-        case SelectionDrag::Rotate:
-        case SelectionDrag::LineControl:
-        case SelectionDrag::LineStart:
-        case SelectionDrag::LineEnd:
-        case SelectionDrag::NumberTip:
-        case SelectionDrag::NumberBubble:
-            setCursor(Qt::SizeAllCursor);
-            return;
-        case SelectionDrag::Left:
-        case SelectionDrag::Right:
-        case SelectionDrag::MagnifierSourceLeft:
-        case SelectionDrag::MagnifierSourceRight:
-            setCursor(Qt::SizeHorCursor);
-            return;
-        case SelectionDrag::Top:
-        case SelectionDrag::Bottom:
-        case SelectionDrag::MagnifierSourceTop:
-        case SelectionDrag::MagnifierSourceBottom:
-            setCursor(Qt::SizeVerCursor);
-            return;
-        case SelectionDrag::TopLeft:
-        case SelectionDrag::BottomRight:
-        case SelectionDrag::MagnifierSourceTopLeft:
-        case SelectionDrag::MagnifierSourceBottomRight:
-            setCursor(Qt::SizeFDiagCursor);
-            return;
-        case SelectionDrag::TopRight:
-        case SelectionDrag::BottomLeft:
-        case SelectionDrag::MagnifierSourceTopRight:
-        case SelectionDrag::MagnifierSourceBottomLeft:
-            setCursor(Qt::SizeBDiagCursor);
-            return;
-        case SelectionDrag::Move:
-            setCursor(Qt::SizeAllCursor);
-            return;
-        case SelectionDrag::None:
-            setCursor(Qt::ArrowCursor);
-            return;
-        }
-    }
-
-    setCursor(m_tool == Tool::Text ? Qt::IBeamCursor : captureCrossCursor());
-}
-
 bool ShotWindow::propertyComboPopupVisible() const
 {
     return (m_propertyRectangleStyleCombo && m_propertyRectangleStyleCombo->view()->isVisible())
@@ -140,41 +12,10 @@ bool ShotWindow::propertyComboPopupVisible() const
         || (m_propertyNumberStyleCombo && m_propertyNumberStyleCombo->view()->isVisible());
 }
 
-bool ShotWindow::mouseOverUiWidget() const
+bool ShotWindow::mouseOverUiWidget(QPointF widgetPoint) const
 {
-    const QPoint pos = mapFromGlobal(QCursor::pos());
-    for (QWidget *w = childAt(pos); w && w != this; w = w->parentWidget()) {
-        const QString name = w->objectName();
-        if (name == QLatin1String("toolbarGrip")
-            || name == QLatin1String("actionToolbarGrip")) {
-            return false;
-        }
-        if (name == QLatin1String("shotToolbar")
-            || name == QLatin1String("actionToolbar")
-            || name == QLatin1String("annotationPropertyPanel")
-            || name == QLatin1String("propertyColorDialogPanel")
-            || name == QLatin1String("propertyFontPanel")
-            || name == QLatin1String("openWithPanel")
-            || name == QLatin1String("extensionPanel")
-            || name == QLatin1String("colorPalette")
-            || name == QLatin1String("shapeMarkerPopup")
-            || qobject_cast<const QComboBox *>(w)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void ShotWindow::clearWheelPreview()
-{
-    if (!m_showWheelPreview) {
-        return;
-    }
-
-    m_showWheelPreview = false;
-    m_wheelPreviewTimer.invalidate();
-    updateCursor();
-    update();
+    // 1. 【标注】【界面命中】使用当前事件位置，子控件保留按钮、文本及握柄自身的光标
+    return childAt(widgetPoint.toPoint()) != nullptr;
 }
 
 bool ShotWindow::hasUsableSelection() const

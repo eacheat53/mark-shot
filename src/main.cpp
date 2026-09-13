@@ -16,6 +16,7 @@
 #include "ui/application_icon.h"
 #include "ui/icons.h"
 #include "ui/i18n.h"
+#include "ui/interaction_cursor.h"
 #include "ui/theme.h"
 #include "window_detection.h"
 #include "windows_tray_controller.h"
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
     markshot::disableQtPortalServicesForHostApp();
 
     QApplication app(argc, argv);
+    markshot::ui::installInteractionCursorPolicy(&app);
     QApplication::setApplicationName(QStringLiteral("mark-shot"));
     QApplication::setApplicationDisplayName(QStringLiteral("Mark Shot"));
     QApplication::setApplicationVersion(QStringLiteral(MARK_SHOT_VERSION));

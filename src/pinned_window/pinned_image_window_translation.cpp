@@ -7,7 +7,6 @@
 #include "shell_command.h"
 
 #include <QAbstractTextDocumentLayout>
-#include <QApplication>
 #include <QDir>
 #include <QFile>
 #include <QFont>
@@ -197,12 +196,8 @@ void PinnedImageWindow::setTranslationBusyCursor(bool active)
         return;
     }
     m_translationBusyCursor = active;
-    if (active) {
-        QApplication::setOverrideCursor(Qt::WaitCursor);
-    } else {
-        QApplication::restoreOverrideCursor();
-        updateCursorForPosition(mapFromGlobal(QCursor::pos()));
-    }
+    // 1. 【置顶图片】【翻译状态】等待反馈限制在当前窗口，其他窗口继续使用正常交互光标
+    updateCursorForPosition(mapFromGlobal(QCursor::pos()));
 }
 
 QVector<PinnedImageWindow::OcrToken>

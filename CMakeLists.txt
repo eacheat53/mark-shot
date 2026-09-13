@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(mark-shot VERSION 0.1.51 LANGUAGES C CXX)
+project(mark-shot VERSION 0.1.52 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -203,21 +203,30 @@ qt_add_executable(mark-shot
     src/pinned_window/pinned_image_window.h
     src/pinned_window/pinned_image_window_geometry.cpp
     src/pinned_window/pinned_image_window_layer_shell.cpp
+    src/pinned_window/pinned_image_window_paint.cpp
     src/pinned_window/pinned_image_window_ocr.cpp
     src/pinned_window/pinned_image_window_text_selection.cpp
     src/pinned_window/pinned_image_window_translation.cpp
     src/pinned_window/pinned_layer_shell_geometry.cpp
     src/pinned_window/pinned_layer_shell_geometry.h
+    src/pinned_window/pinned_layer_shell_drag_preview.cpp
+    src/pinned_window/pinned_layer_shell_drag_preview.h
     src/pinned_window/pinned_layer_shell_screen_binding.cpp
     src/pinned_window/pinned_layer_shell_screen_binding.h
     src/pinned_window/pinned_resize_controller.cpp
     src/pinned_window/pinned_resize_controller.h
+    src/pinned_window/pinned_native_resize.cpp
+    src/pinned_window/pinned_native_resize.h
     src/pinned_window/pinned_text_selection_metrics.cpp
     src/pinned_window/pinned_text_selection_metrics.h
     src/pinned_window_top.cpp
     src/pinned_window_top.h
     src/pinned_window/pinned_kde_keep_above.cpp
     src/pinned_window/pinned_kde_keep_above.h
+    src/pinned_window/pinned_kde_keep_above_script.cpp
+    src/pinned_window/pinned_kde_keep_above_script.h
+    src/pinned_window/pinned_kde_keep_above_bridge.cpp
+    src/pinned_window/pinned_kde_keep_above_bridge.h
     src/annotation_launch.cpp
     src/annotation_launch.h
     src/scroll/stitcher.cpp
@@ -247,8 +256,17 @@ qt_add_executable(mark-shot
     src/ui/color_history_store.h
     src/ui/icons.cpp
     src/ui/icons.h
+    src/ui/disclosure_section.cpp
+    src/ui/disclosure_section.h
+    src/ui/interaction_cursor.cpp
+    src/ui/interaction_cursor.h
+    src/ui/window_resize_grip.cpp
+    src/ui/window_resize_grip.h
+    src/ui/form_row_visibility.h
     src/ui/i18n.cpp
     src/ui/i18n.h
+    src/ui/i18n_task_windows.cpp
+    src/ui/i18n_task_windows.h
     src/ui/interface_language_config.cpp
     src/ui/interface_language_config.h
     src/ui/interface_theme_config.cpp
@@ -418,6 +436,9 @@ add_subdirectory(plugins/code-scan-zxing)
 include(CTest)
 if(BUILD_TESTING)
     include(cmake/core_tests.cmake)
+    include(cmake/annotation_cursor_tests.cmake)
+    include(cmake/kde_pinned_window_tests.cmake)
+    include(cmake/hyprland_pinned_window_tests.cmake)
 endif()
 
 include(cmake/install_rules.cmake)

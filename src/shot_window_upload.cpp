@@ -1,5 +1,8 @@
 #include "shot_window_module.h"
 
+#include <QScopedValueRollback>
+#include <QScopeGuard>
+
 using namespace markshot::shot;
 
 /**
@@ -19,7 +22,10 @@ void ShotWindow::uploadSelection()
     }
 
     const UploadConfig config = uploadConfig();
-    QApplication::setOverrideCursor(Qt::WaitCursor);
+    // 【截图】【上传光标】先恢复任务状态再刷新指针，失败和超时也按作用域清理
+    const auto restoreCursor = qScopeGuard([this] { updateCursor(); });
+    const QScopedValueRollback<bool> busy(m_operationBusy, true);
+    updateCursor();
 
     QProcess process;
     process.setProcessEnvironment(config.env);
@@ -38,7 +44,6 @@ void ShotWindow::uploadSelection()
     process.start();
     if (!process.waitForStarted(3000)) {
         QFile::remove(tempPath);
-        QApplication::restoreOverrideCursor();
         showToast(config.command.isEmpty()
                       ? MS_TR("Upload helper not found")
                       : MS_TR("Upload failed"));
@@ -48,13 +53,11 @@ void ShotWindow::uploadSelection()
         process.kill();
         process.waitForFinished(1000);
         QFile::remove(tempPath);
-        QApplication::restoreOverrideCursor();
         showToast(MS_TR("Upload timed out"));
         return;
     }
 
     QFile::remove(tempPath);
-    QApplication::restoreOverrideCursor();
 
     const QByteArray output = process.readAllStandardOutput();
     const QByteArray errorOutput = process.readAllStandardError();

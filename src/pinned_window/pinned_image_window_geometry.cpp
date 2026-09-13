@@ -1,6 +1,9 @@
 #include "pinned_window/pinned_image_window.h"
 
+#include "pinned_window/pinned_kde_keep_above.h"
 #include "pinned_window/pinned_layer_shell_geometry.h"
+#include "pinned_window/pinned_layer_shell_drag_preview.h"
+#include "pinned_window/pinned_native_resize.h"
 #include "pinned_window_top.h"
 
 #include <QGuiApplication>
@@ -77,6 +80,9 @@ QPoint PinnedImageWindow::logicalGlobalPointForLocalAnchor(QPointF localAnchor, 
     if (!m_config.alwaysOnTop || !pinnedWindowHasLayerShellTop(this)) {
         return fallbackGlobal;
     }
+    if (m_layerShellDragPreviewActive) {
+        return m_layerShellDragInputGeometry.topLeft() + localAnchor.toPoint();
+    }
     if (m_layerShellVisibleGeometry.isValid() && !m_layerShellVisibleGeometry.isEmpty()) {
         return m_layerShellVisibleGeometry.topLeft() + localAnchor.toPoint();
     }
@@ -98,10 +104,15 @@ void PinnedImageWindow::setPinnedGeometry(QRect geometry, bool moveWidget)
                 screenGeometries.at(screenIndex),
                 QSize(kPinnedMinimumExtent, kPinnedMinimumExtent));
 
-            // 1. 记录完整图片逻辑几何,但 QWidget 只保留屏幕内可见 surface
+            // 1. 【钉图】【几何同步】记录完整图片逻辑几何，QWidget 只保留屏幕内可见 surface
             m_logicalGeometry = placement.logicalGeometry;
             m_layerShellVisibleGeometry = placement.visibleGeometry;
             m_layerShellContentOffset = placement.contentOffset;
+            // 2. 【钉图】【拖动预览】只移动绘制预览，原输入 surface 的尺寸、位置与协议属性保持稳定
+            if (m_layerShellDragPreviewActive) {
+                m_layerShellDragPreview->setLogicalGeometry(m_logicalGeometry);
+                return;
+            }
             setProperty("markShotPinnedGeometry", m_logicalGeometry);
             setMinimumSize(QSize(kPinnedMinimumExtent, kPinnedMinimumExtent));
             setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
@@ -154,6 +165,21 @@ bool PinnedImageWindow::shouldBlockResizeAtEmbeddedEdge(PinnedResizeDirection di
     return pinnedResizeDirectionTouchesScreenEdge(direction, geometry, screenGeometry);
 }
 
+void PinnedImageWindow::initializeNativeResize()
+{
+    if (!usesKdePinnedKeepAbove()
+        || !QGuiApplication::platformName().contains(QStringLiteral("wayland"), Qt::CaseInsensitive)) {
+        return;
+    }
+    m_nativeResize = new PinnedNativeResize(this, [this](QSize size) {
+        // 1. 【钉图】【原生缩放】同步绘制尺寸，不请求 Wayland 无法应用的绝对位置
+        m_logicalGeometry = QRect(pos(), size);
+        m_scale = static_cast<qreal>(size.width()) / std::max(1, m_displayBaseSize.width());
+        setProperty("markShotPinnedGeometry", m_logicalGeometry);
+        update();
+    });
+}
+
 bool PinnedImageWindow::startResizeDrag(QMouseEvent *event)
 {
     const PinnedResizeDirection direction = resizeDirectionAt(event->position());
@@ -165,6 +191,10 @@ bool PinnedImageWindow::startResizeDrag(QMouseEvent *event)
     const QRect startGeometry(pinnedTopLeft(), logicalPinnedSize());
     m_resizeDrag = beginPinnedResizeDrag(direction, startGeometry, event->globalPosition().toPoint());
     setCursor(cursorForPinnedResizeDirection(direction));
+    if (m_nativeResize) {
+        m_nativeResize->start(direction);
+    }
+    beginLayerShellDragPreview();
     return true;
 }
 
@@ -174,7 +204,10 @@ bool PinnedImageWindow::continueResizeDrag(QMouseEvent *event)
         return false;
     }
     if (!event->buttons().testFlag(Qt::LeftButton)) {
-        finishResizeDrag(event->position());
+        finishResizeDrag(pinnedLocalPointForInput(event->position()));
+        return true;
+    }
+    if (m_nativeResize && m_nativeResize->isActive()) {
         return true;
     }
 
@@ -188,7 +221,11 @@ bool PinnedImageWindow::continueResizeDrag(QMouseEvent *event)
 
 void PinnedImageWindow::finishResizeDrag(QPointF widgetPoint)
 {
+    if (m_nativeResize) {
+        m_nativeResize->finish();
+    }
     m_resizeDrag = {};
+    finishLayerShellDragPreview();
     updateCursorForPosition(widgetPoint);
 }
 

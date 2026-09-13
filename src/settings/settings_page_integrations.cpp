@@ -24,7 +24,7 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
     auto *layout = createSettingsPageLayout(this);
 
     // 1. Provider 状态卡片：展示各能力当前实际生效的执行方
-    QFrame *providerCard = createSettingsCard(MS_TR("Provider Status"),
+    QFrame *providerCard = createAdvancedSettingsCard(MS_TR("Provider Status"),
                                               MS_TR("Shows which provider each capability currently resolves to: "
                                                     "custom command, plugin, builtin, or the legacy helper."),
                                               this);
@@ -37,15 +37,14 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
     providerForm->addRow(MS_TR("Code Scanner"), m_codeScanProviderStatus);
     layout->addWidget(providerCard);
 
-    QFrame *codeCard = createSettingsCard(MS_TR("Code Scanner"),
+    QFrame *codeCard = createAdvancedSettingsCard(MS_TR("Code Scanner"),
                                           MS_TR("Configure the external helper used to recognize QR codes and barcodes."),
                                           this);
     QFormLayout *codeForm = settingsCardForm(codeCard);
     m_codeScanCommand = addTextRow(codeForm, MS_TR("Scan Command"), QStringLiteral("mark-shot-code-scan {image}"));
     m_codeScanTimeoutMs = addSpinRow(codeForm, MS_TR("Scan Timeout"), 1000, 300000, QStringLiteral(" ms"));
-    layout->addWidget(codeCard);
 
-    QFrame *uploadCard = createSettingsCard(MS_TR("Image Upload"),
+    QFrame *uploadCard = createAdvancedSettingsCard(MS_TR("Image Upload"),
                                             MS_TR("Configure the external helper used to upload screenshots."),
                                             this);
     QFormLayout *uploadForm = settingsCardForm(uploadCard);
@@ -54,7 +53,6 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
     m_uploadEnv = addPlainTextRow(uploadForm,
                                   MS_TR("Upload Environment"),
                                   QStringLiteral("TOKEN=example"));
-    layout->addWidget(uploadCard);
 
     QFrame *translationCard = createSettingsCard(MS_TR("OCR and Translation Integration"),
                                                  MS_TR("Configure OCR result panels and API-based translation helpers."),
@@ -63,6 +61,10 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
     m_ocrResultPanel = addSwitchRow(translationForm,
                                     MS_TR("OCR Result Panel"),
                                     MS_TR("Show an editable OCR result panel before copying text."));
+    layout->addWidget(translationCard);
+    QFrame *apiCard = createAdvancedSettingsCard(MS_TR("Translation service"),
+                                                MS_TR("Configure OCR result panels and API-based translation helpers."), this);
+    translationForm = settingsCardForm(apiCard);
     m_translationApiBase = addTextRow(translationForm,
                                       MS_TR("Translation API Base"),
                                       QStringLiteral("https://api.openai.com/v1"));
@@ -76,8 +78,10 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
     m_translationSystemPrompt = addPlainTextRow(translationForm,
                                                 MS_TR("System Prompt"),
                                                 MS_TR("Optional translation system prompt."));
-    layout->addWidget(translationCard);
+    layout->addWidget(apiCard);
     layout->addWidget(createCloudTranslateCard(this, &m_cloudTranslate));
+    layout->addWidget(codeCard);
+    layout->addWidget(uploadCard);
     layout->addStretch();
 }
 

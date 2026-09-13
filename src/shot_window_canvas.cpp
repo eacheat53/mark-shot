@@ -153,6 +153,9 @@ void ShotWindow::paintEvent(QPaintEvent *event)
     drawActiveRecordingStatus(painter);
 
     drawWheelPreview(painter);
+    if (selectionPointerVisible()) {
+        drawSelectionPointer(painter, imageToWidget(m_startupHoverImagePoint));
+    }
 }
 
 void ShotWindow::resizeEvent(QResizeEvent *)
@@ -197,6 +200,12 @@ void ShotWindow::showEvent(QShowEvent *event)
 void ShotWindow::mousePressEvent(QMouseEvent *event)
 {
     clearWheelPreview();
+
+    // 1. 【标注】【图像平移】中键抓取期间只维护平移，其他按键不创建并行草稿
+    if (m_imagePanning) {
+        event->accept();
+        return;
+    }
 
     if (m_mode == Mode::Selecting
         && displayCapturePickerVisible()
@@ -271,8 +280,7 @@ void ShotWindow::mousePressEvent(QMouseEvent *event)
         }
         if (event->button() == Qt::MiddleButton && imageNavigationAvailable() && m_frozenImageRect.contains(event->position())) {
             commitTextEditor();
-            m_dragging = false;
-            m_annotationSelectionBoxActive = false;
+            cancelPointerInteraction();
             m_imagePanning = true;
             m_imagePanStartWidget = event->position();
             m_imagePanStartCenter = m_imageCenterInitialized
@@ -348,6 +356,11 @@ void ShotWindow::mousePressEvent(QMouseEvent *event)
         return;
     }
 
+    if (m_tool == Tool::Select && selectedAnnotationDeleteButtonRect().contains(event->position())) {
+        deleteSelectedAnnotation();
+        return;
+    }
+
     if (!m_frozenImageRect.contains(event->position())) {
         return;
     }
@@ -371,11 +384,6 @@ void ShotWindow::mousePressEvent(QMouseEvent *event)
     }
 
     if (m_tool == Tool::Select) {
-        if (selectedAnnotationDeleteButtonRect().contains(event->position())) {
-            deleteSelectedAnnotation();
-            return;
-        }
-
         const QVector<int> selectedIds = selectedAnnotationIds();
         if (selectedIds.size() > 1) {
             const SelectionDrag drag = selectedAnnotationsDragAt(imagePoint);

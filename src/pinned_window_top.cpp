@@ -310,7 +310,12 @@ void applyPinnedWindowTopState(QWidget *window, bool alwaysOnTop)
         window->setProperty("markShotPinnedLayerShellActive", false);
         window->setProperty(kPinnedLayerShellScreenNameProperty, QString());
     }
-    applyQtTopHint(window, alwaysOnTop, !layerShellTop);
+    // 【钉图】【KDE置顶】KWin 管理普通 Wayland 窗口的层级，避免 Qt 改标志后隐藏并重新定位
+    const bool kdeWayland = usesKdePinnedKeepAbove()
+        && QGuiApplication::platformName().contains(QStringLiteral("wayland"), Qt::CaseInsensitive);
+    if (!kdeWayland) {
+        applyQtTopHint(window, alwaysOnTop, !layerShellTop);
+    }
     markshot::windows::setWindowTopMost(window, alwaysOnTop);
     if (alwaysOnTop) {
         configurePinnedLayerShell(window);
@@ -322,7 +327,7 @@ void applyPinnedWindowTopState(QWidget *window, bool alwaysOnTop)
 
 #ifdef MARK_SHOT_WITH_DBUS
     applyGnomePinnedWindowsAbove(window->windowTitle(), alwaysOnTop);
-    applyKdePinnedWindowKeepAbove(window->windowTitle(), alwaysOnTop);
+    applyKdePinnedWindowKeepAbove(window, alwaysOnTop);
 #endif
 }
 

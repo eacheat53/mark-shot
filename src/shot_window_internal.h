@@ -160,9 +160,10 @@ markshot::scroll::ScrollSessionUiConfig scrollSessionUiConfig();
  * 【OCR】【结果窗口】创建 OCR 结果浮窗。
  * @param text OCR 识别文本。
  * @param targetScreen 截图所在屏幕。
+ * @param sourceImage 本次识别使用的原始截图，缺失时不显示预览。
  * @return OCR 结果浮窗。
  */
-QWidget *createOcrResultWindow(QString text, QScreen *targetScreen);
+QWidget *createOcrResultWindow(QString text, QScreen *targetScreen, QImage sourceImage = {});
 QWidget *createCodeScanResultWindow(QString text);
 QWidget *createPinnedImageWindow(QImage image, std::optional<QPoint> initialTopLeft = std::nullopt);
 

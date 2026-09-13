@@ -75,6 +75,16 @@ std::optional<int> PinnedImageWindow::closestToken(QPointF imagePoint) const
 
 void PinnedImageWindow::updateCursorForPosition(QPointF widgetPoint)
 {
+    // 1. 【置顶图片】【光标状态】活动操作保持自己的光标，不受后台翻译完成事件覆盖
+    if (isPinnedResizeDirection(m_resizeDrag.direction)) {
+        setCursor(cursorForPinnedResizeDirection(m_resizeDrag.direction));
+        return;
+    }
+    if (m_selectingText || m_moving) {
+        setCursor(m_selectingText ? Qt::IBeamCursor : Qt::ClosedHandCursor);
+        return;
+    }
+    // 2. 【置顶图片】【悬停反馈】缩放和可选文字优先，等待翻译仅影响当前窗口空白处
     const PinnedResizeDirection direction = resizeDirectionAt(widgetPoint);
     if (isPinnedResizeDirection(direction)) {
         setCursor(cursorForPinnedResizeDirection(direction));
@@ -84,7 +94,7 @@ void PinnedImageWindow::updateCursorForPosition(QPointF widgetPoint)
     if (m_config.textSelectionCopyEnabled && tokenAt(widgetToImage(widgetPoint))) {
         setCursor(Qt::IBeamCursor);
     } else {
-        setCursor(Qt::OpenHandCursor);
+        setCursor(m_translationBusyCursor ? Qt::BusyCursor : Qt::OpenHandCursor);
     }
 }
 

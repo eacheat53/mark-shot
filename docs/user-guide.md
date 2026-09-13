@@ -237,7 +237,7 @@ clicking a text annotation still opens the inline editor.
 
 ### 4.3 Export frame
 
-Enable **Settings → Export → Mac-style frame** to add transparent padding,
+Enable **Settings → Storage → Screenshot Export Appearance → Mac-style Frame** to add transparent padding,
 rounded corners, and a soft shadow to saved / copied / uploaded images.
 
 ---
@@ -260,6 +260,23 @@ provider selection and credentials.
 On KDE Plasma Wayland, `pinnedWindow.alwaysOnTop` is applied through a session
 KWin script so the sticker stays above other windows. The window remains a
 normal xdg-toplevel, so dragging and resizing are unchanged.
+
+The OCR result window opens with the editable recognized text. The **Text / Source image**
+tabs share one content area. The image scales to fit the window; returning to text
+restores edits, undo history, scroll positions, and pane sizes. **Translate** in the
+top bar reveals the translation pane, with language and translation controls above
+the editors, then starts a translation with the saved language. Each pane has its own copy action and
+shows an undo action after editing. Copy feedback appears on the corresponding
+button. Wide windows show both panes side by side; narrow windows stack them.
+Drag the divider to adjust their space, or use the bottom-right grip to resize
+the window.
+
+A running translation can be canceled. **Hide translation** also cancels any
+pending request and retains the existing result. Editing the source or changing
+the target language marks the existing translation as out of date. `Ctrl+Enter` translates,
+`Ctrl+Shift+C` copies the full text of the focused editor, `Ctrl+C` copies the
+selection, and `Esc` closes the window. The window follows the configured light
+or dark interface theme.
 
 The separate OCR result window opens as a regular window by default, so niri can
 identify it with `niri msg pick-window` and apply window rules. Drag its title bar
@@ -349,9 +366,35 @@ the count from 1 to 200. Images persist across restarts in the application's
 Linux with the default XDG paths). Upload-only, OCR-only, display-picker, and
 headless captures do not add entries.
 
+### 8.2 Recording
+
+Open the recording dialog from the tray menu or a configured recording shortcut.
+Choose Video or GIF beside the title, then select a display or region. The main
+action reads **Select region** when a selection is needed and **Start recording**
+for an entire display. In Video mode, enable **Record audio** to choose an input.
+
+**Save to** shows the output file name; expand it to change the path. **Recording
+options** shows the current frame rate, format, and video quality; expand it for
+the detailed options, countdown, and capture backend. The window adjusts its height
+to fit expanded content. When screen space is limited, the options remain scrollable
+and the bottom actions stay visible. Switching between Video
+and GIF retains each mode's frame rate and the selected audio input. GIF hides
+audio and video-only controls. During recording, the compact control bar shows
+elapsed time and recording or paused status, with pause/resume and **Stop** actions.
+
 ---
 
 ## 9. Configuration & Backends
+
+Open **Settings** from the tray menu. Labels and fields align across groups; numeric
+and shortcut fields use compact widths, and switch captions sit next to their
+checkboxes. Narrow windows replace the sidebar with a category selector and place
+labels above fields. Long labels and switch captions wrap to fit. Advanced groups expand in place and retain their input when
+collapsed. **Save** applies changes without closing the window and reports the
+result in the footer. **Undo changes** restores the most recently saved values
+while keeping the current page open. Pressing `Enter` in a single-line text field saves
+changes and keeps the window open. Returning an option to its saved value clears
+the unsaved state.
 
 - Config file: `~/.config/mark-shot/config.json` (Linux), created on first run.
 - Full reference: [Configuration](configuration.md).

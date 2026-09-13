@@ -28,7 +28,7 @@ SettingsPageAdvanced::SettingsPageAdvanced(QWidget *parent)
     layout->addWidget(debugCard);
 
     // 2. 窗口检测
-    QFrame *windowCard = createSettingsCard(MS_TR("Window Detection"),
+    QFrame *windowCard = createAdvancedSettingsCard(MS_TR("Window Detection"),
                                             MS_TR("Configure the external helper used to detect windows under the selection."),
                                             this);
     QFormLayout *windowForm = settingsCardForm(windowCard);
@@ -46,7 +46,7 @@ SettingsPageAdvanced::SettingsPageAdvanced(QWidget *parent)
     layout->addWidget(windowCard);
 
     // 3. 应用环境变量
-    QFrame *envCard = createSettingsCard(MS_TR("Application Environment"),
+    QFrame *envCard = createAdvancedSettingsCard(MS_TR("Application Environment"),
                                          MS_TR("Environment variables applied when Mark Shot starts."),
                                          this);
     QFormLayout *envForm = settingsCardForm(envCard);

@@ -3,6 +3,9 @@
 #include <QListWidget>
 #include <QVector>
 
+class QComboBox;
+class QLabel;
+
 namespace markshot::settings {
 
 /// @brief 设置界面侧栏导航组件。
@@ -20,13 +23,18 @@ public:
     /// @param index 逻辑索引，范围 0..10。
     void setCurrentLogicalRow(int index);
 
+    /// @brief 根据窗口宽度切换侧栏和紧凑分类选择器
+    /// @param compact 是否使用顶部分类选择器
+    /// @return 无返回值
+    void setCompact(bool compact);
+
 signals:
     /// @brief 用户切换导航项时触发。
     /// @param logicalIndex 逻辑页索引，与内容栈对应。
     void navigationChanged(int logicalIndex);
 
 private:
-    /// @brief 构建标题区（应用名 + 副标题）。
+    /// @brief 构建紧凑的设置标题区。
     void buildHeader();
 
     /// @brief 构建导航列表，填充分类项与分隔项。
@@ -41,6 +49,8 @@ private:
     void addSeparator();
 
     QListWidget *m_list = nullptr;
+    QComboBox *m_compactSelector = nullptr;
+    QLabel *m_header = nullptr;
     /// 逻辑索引到实际列表行的映射
     QVector<int> m_logicalRows;
 };

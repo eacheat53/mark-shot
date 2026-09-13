@@ -88,6 +88,13 @@ enum class Mode {
     Editing,
 };
 
+/// @brief 区分接管指针的工具尺寸预览与保留系统指针的图像缩放提示
+enum class WheelPreview {
+    None,
+    ToolSize,
+    ImageZoom,
+};
+
 /// @brief 选区前可使用的辅助工具
 enum class StartupTool {
     None,

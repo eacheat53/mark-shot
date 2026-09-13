@@ -24,8 +24,8 @@ void syncPinnedWindowTopGeometry(QWidget *window);
 /// @param geometry Global logical window geometry.
 void syncPinnedWindowTopGeometry(QWidget *window, const QRect &geometry);
 
-/// @brief Checks whether pinned windows should use layer-shell for topmost behavior.
-/// @return True when non-GNOME Wayland layer-shell should be used.
+/// @brief 判断贴图是否使用 layer-shell 保持置顶
+/// @return 非 GNOME、非 KDE 的 Wayland 会话返回 true
 bool pinnedWindowUsesLayerShellTop();
 
 /// @brief Checks whether a pinned window is currently configured as layer-shell.

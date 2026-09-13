@@ -25,10 +25,12 @@ SettingsPageCapture::SettingsPageCapture(QWidget *parent)
     m_freezeScope = addComboRow(form, MS_TR("Freeze Scope"));
     m_freezeScope->addItem(MS_TR("All Screens"), static_cast<int>(CaptureFreezeScope::AllScreens));
     m_freezeScope->addItem(MS_TR("Cursor Screen"), static_cast<int>(CaptureFreezeScope::CursorScreen));
-    m_kdeKwinScreenshot = addSwitchRow(form,
+    QFrame *compatibility = createAdvancedSettingsCard(MS_TR("Capture compatibility"), {}, this);
+    QFormLayout *compatibilityForm = settingsCardForm(compatibility);
+    m_kdeKwinScreenshot = addSwitchRow(compatibilityForm,
                                        MS_TR("KDE KWin Screenshot"),
                                        MS_TR("Use KWin ScreenShot2 on KDE Wayland when available."));
-    m_hideOwnWindows = addSwitchRow(form,
+    m_hideOwnWindows = addSwitchRow(compatibilityForm,
                                     MS_TR("Hide Mark Shot Windows While Capturing"),
                                     MS_TR("Hide own windows from screenshots. Turn off to include them."));
     // 选区内空白处双击执行的快捷动作，省去移动到工具栏按钮的往返
@@ -51,6 +53,7 @@ SettingsPageCapture::SettingsPageCapture(QWidget *parent)
                                     MS_TR("Selection Loupe"),
                                     MS_TR("Show a magnifier near the cursor and nudge the pointer with arrow keys."));
     layout->addWidget(captureCard);
+    layout->addWidget(compatibility);
     layout->addStretch();
 }
 

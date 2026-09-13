@@ -87,6 +87,12 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
         return;
     }
 
+    // 1. 【标注】【滚轮输入】正在绘制或拖动时保持当前操作，避免预览覆盖抓取光标
+    if (m_dragging || m_imagePanning || m_toolbarDragging || m_startupRulerDragging) {
+        event->accept();
+        return;
+    }
+
     const qreal steps = annotationWidthWheelSteps(event);
     if (qFuzzyIsNull(steps) || m_mode != Mode::Editing) {
         QWidget::wheelEvent(event);
@@ -103,12 +109,8 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
             return;
         }
         zoomImageAt(factor, event->position());
-        m_showWheelPreview = true;
-        m_wheelPreviewPosition = event->position();
-        m_wheelPreviewTimer.restart();
-        updateCursor();
+        startWheelPreview(event->position(), WheelPreview::ImageZoom);
         event->accept();
-        update();
         return;
     }
 
@@ -142,12 +144,8 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
         queueAnnotationWidthWheelHistory(wheelContext, historyBeforeChange);
     }
 
-    m_showWheelPreview = true;
-    m_wheelPreviewPosition = event->position();
-    m_wheelPreviewTimer.restart();
-    updateCursor();
+    startWheelPreview(event->position(), WheelPreview::ToolSize);
     event->accept();
-    update();
 }
 
 /**

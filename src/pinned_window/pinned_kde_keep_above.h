@@ -1,36 +1,17 @@
 #pragma once
 
-#include <QString>
+class QWidget;
 
 namespace markshot::shot {
 
-/**
- * 返回常驻 KWin 脚本的插件名。
- * @return 固定插件名，用于重复加载前先卸载旧实例。
- */
-QString kdePinnedKeepAbovePluginName();
+/// @brief 判断当前 Qt 窗口是否需要 KDE 的置顶状态通道
+/// @return 启用了 D-Bus 且 KDE 会话使用 Wayland 或 XCB 窗口时返回 true
+bool usesKdePinnedKeepAbove();
 
-/**
- * 判断窗口标题是否属于需要 KWin keepAbove 的钉图窗口。
- * @param title 窗口标题。
- * @return 钉图或 OCR 结果窗口标题时返回 true。
- */
-bool isKdePinnedKeepAboveTitle(const QString &title);
-
-/**
- * 生成设置或取消 keepAbove 的 KWin JavaScript。
- * @param title 当前钉图窗口标题。
- * @param alwaysOnTop 是否保持置顶。
- * @return KWin 脚本源码。
- */
-QString kdePinnedKeepAboveScriptSource(const QString &title, bool alwaysOnTop);
-
-/**
- * 通过 KWin Scripting 接口应用钉图置顶。
- * @param title 当前钉图窗口标题。
- * @param alwaysOnTop 是否保持置顶。
- * @return 脚本加载并执行成功时返回 true。
- */
-bool applyKdePinnedWindowKeepAbove(const QString &title, bool alwaysOnTop);
+/// @brief 为指定钉图或 OCR 窗口应用独立的 KWin 置顶状态
+/// @param window 目标窗口，标题和脚本身份在其生命周期内保持独立
+/// @param alwaysOnTop 是否保持置顶
+/// @return 脚本提交成功返回 true，实际状态由 KWin 应用
+bool applyKdePinnedWindowKeepAbove(QWidget *window, bool alwaysOnTop);
 
 }  // namespace markshot::shot
