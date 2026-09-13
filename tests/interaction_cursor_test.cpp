@@ -115,14 +115,15 @@ private slots:
         tabs.resize(420, 40);
         tabs.show();
         QVERIFY(QTest::qWaitForWindowExposed(&tabs));
+        // 2. 【界面测试】【原生指针】原生平台异步投递移动事件，等待悬停光标更新
         QTest::mouseMove(&tabs, tabs.tabRect(0).center());
-        QCOMPARE(tabs.cursor().shape(), Qt::PointingHandCursor);
+        QTRY_COMPARE(tabs.cursor().shape(), Qt::PointingHandCursor);
         QTest::mouseMove(&tabs, tabs.tabRect(1).center());
-        QCOMPARE(tabs.cursor().shape(), Qt::ArrowCursor);
+        QTRY_COMPARE(tabs.cursor().shape(), Qt::ArrowCursor);
         QTest::mouseMove(&tabs, QPoint(400, 20));
-        QCOMPARE(tabs.cursor().shape(), Qt::ArrowCursor);
+        QTRY_COMPARE(tabs.cursor().shape(), Qt::ArrowCursor);
         tabs.hide();
-        // 2. 核对导航项、不可选择项目与列表空白
+        // 3. 核对导航项、不可选择项目与列表空白
         QListWidget list;
         list.setProperty("actionList", true);
         list.addItem(QStringLiteral("Settings"));
