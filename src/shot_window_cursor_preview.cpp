@@ -1,5 +1,7 @@
 #include "shot_window_module.h"
 
+#include "annotation_size_preview.h"
+
 using namespace markshot::shot;
 
 void ShotWindow::startWheelPreview(QPointF widgetPoint, WheelPreview preview)
@@ -64,15 +66,26 @@ void ShotWindow::drawWheelPreview(QPainter &painter)
         painter.setPen(QColor(229, 231, 235));
         painter.drawText(bubble, Qt::AlignCenter, zoomText);
     } else {
-        const qreal extent = std::clamp(currentToolPreviewSize(), 2.0, 96.0);
-        const QRectF preview(m_wheelPreviewPosition - QPointF(extent / 2, extent / 2), QSizeF(extent, extent));
-        painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(QColor(17, 24, 39, 235), 3));
-        painter.drawEllipse(preview);
-        painter.setPen(QPen(m_currentColor, 1));
-        painter.drawEllipse(preview);
-        // 1. 【标注】【指针预览】尺寸轮廓不遮挡画面，中心使用与系统一致的精确十字
-        drawCaptureCrossCursor(painter, m_wheelPreviewPosition);
+        // 1. 【标注】【粗细预览】选择工具读取实际标注，避免使用固定尺寸或默认颜色
+        const QVector<int> selectedIds = selectedAnnotationIds();
+        const Annotation *selected = m_tool == Tool::Select && !selectedIds.isEmpty()
+            ? annotationById(selectedIds.first()) : nullptr;
+        const AnnotationSizePreview preview{
+            selected ? selected->tool : m_tool,
+            selected ? selected->width : currentToolWidth(),
+            annotationSizeScale(true),
+            selected ? selected->color : m_currentColor,
+        };
+        QVector<QRect> obstacles;
+        const QWidget *panels[] = {m_toolbar, m_actionToolbar, m_annotationPropertyPanel,
+            m_colorPalette, m_propertyColorDialogPanel, m_propertyFontPanel,
+            m_openWithPanel, m_extensionPanel, m_textEditor, m_shapeMarkerPopup};
+        for (const QWidget *panel : panels) {
+            if (panel && panel->isVisible()) {
+                obstacles.append(panel->geometry());
+            }
+        }
+        drawAnnotationSizePreview(painter, preview, m_wheelPreviewPosition, rect(), obstacles);
     }
     painter.restore();
 }
