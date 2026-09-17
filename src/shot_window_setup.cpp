@@ -142,7 +142,7 @@ ShotWindow::ShotWindow(QImage frozenFrame,
     });
 
     setWindowTitle(MS_TR("Mark Shot"));
-    setCursor(captureCrossCursor());
+    setCursor(captureCrossCursor(devicePixelRatioF()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setAttribute(Qt::WA_DeleteOnClose);

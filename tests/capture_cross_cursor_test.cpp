@@ -12,25 +12,54 @@ class CaptureCrossCursorTest final : public QObject {
     Q_OBJECT
 
 private slots:
-    /// @brief 检查硬件光标行步长与热点合法性，无参数和返回值
+    /// @brief 提供整数与小数输出缩放，检查资源倍率向上取整
+    void keepsAlignedHardwareBuffer_data()
+    {
+        QTest::addColumn<qreal>("requestedDpr");
+        QTest::addColumn<int>("resourceScale");
+        QTest::newRow("one-x") << 1.0 << 1;
+        QTest::newRow("one-and-quarter-x") << 1.25 << 2;
+        QTest::newRow("one-and-half-x") << 1.5 << 2;
+        QTest::newRow("two-x") << 2.0 << 2;
+    }
+
+    /// @brief 检查不同输出缩放下的硬件光标行步长与热点合法性
     void keepsAlignedHardwareBuffer()
     {
-        const QCursor cursor = captureCrossCursor();
-        const QImage image = cursor.pixmap().toImage().convertToFormat(QImage::Format_ARGB32);
+        QFETCH(qreal, requestedDpr);
+        QFETCH(int, resourceScale);
+        const QCursor cursor = captureCrossCursor(requestedDpr);
+        const QPixmap pixmap = cursor.pixmap();
+        const QImage image = pixmap.toImage().convertToFormat(QImage::Format_ARGB32);
         QVERIFY(!image.isNull());
+        QCOMPARE(pixmap.devicePixelRatio(), static_cast<qreal>(resourceScale));
+        QCOMPARE(image.size(), QSize(64 * resourceScale, 64 * resourceScale));
+        QCOMPARE(pixmap.deviceIndependentSize(), QSizeF(64, 64));
         QCOMPARE(image.bytesPerLine() % 256, 0);
+        QCOMPARE(cursor.hotSpot(), QPoint(32 * resourceScale, 32 * resourceScale));
         QVERIFY(image.rect().contains(cursor.hotSpot()));
     }
 
-    /// @brief 比较两种指针在相同热点处的完整绘制结果，无参数和返回值
+    /// @brief 提供整数与小数输出缩放，比较软硬件十字图案
+    void softwarePointerMatchesHardwareCursor_data()
+    {
+        keepsAlignedHardwareBuffer_data();
+    }
+
+    /// @brief 比较不同输出缩放下的软件指针与硬件 cursor 图案
     void softwarePointerMatchesHardwareCursor()
     {
-        const QCursor cursor = captureCrossCursor();
-        const QImage expected = cursor.pixmap().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        QFETCH(qreal, requestedDpr);
+        QFETCH(int, resourceScale);
+        const QCursor cursor = captureCrossCursor(requestedDpr);
+        const QPixmap pixmap = cursor.pixmap();
+        QCOMPARE(pixmap.devicePixelRatio(), static_cast<qreal>(resourceScale));
+        const QImage expected = pixmap.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
         QImage actual(expected.size(), QImage::Format_ARGB32_Premultiplied);
+        actual.setDevicePixelRatio(resourceScale);
         actual.fill(Qt::transparent);
         QPainter painter(&actual);
-        drawSelectionPointer(painter, cursor.hotSpot());
+        drawSelectionPointer(painter, QPointF(cursor.hotSpot()) / resourceScale);
         painter.end();
         QCOMPARE(actual, expected);
     }

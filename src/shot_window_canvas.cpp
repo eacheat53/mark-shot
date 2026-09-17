@@ -189,9 +189,11 @@ void ShotWindow::showEvent(QShowEvent *event)
                                newScreen ? newScreen->name().toUtf8().constData() : "(none)",
                                newScreen ? newScreen->devicePixelRatio() : 0.0);
             updateFrozenImageRect();
+            updateCursor();
             update();
         });
     }
+    updateCursor();
 }
 
 /// @brief 按当前工具开始选区或标注操作
