@@ -69,6 +69,15 @@ void ShotWindow::updateCursor()
     updatePointerCursor(mapFromGlobal(QCursor::pos()));
 }
 
+void ShotWindow::scheduleUiCursorRefresh(QPointF widgetPoint)
+{
+    QTimer::singleShot(0, this, [this, widgetPoint] {
+        if (isVisible() && !m_dragging && hasUsableSelection()) {
+            updatePointerCursor(widgetPoint);
+        }
+    });
+}
+
 bool ShotWindow::selectionPointerVisible() const
 {
     return m_selectionPointerDetached && m_startupHoverValid && !m_operationBusy
@@ -92,9 +101,15 @@ void ShotWindow::updatePointerCursor(QPointF widgetPoint)
         setCursor(Qt::PointingHandCursor);
         return;
     }
-    if (!m_dragging && (propertyComboPopupVisible() || mouseOverUiWidget(widgetPoint))) {
-        setCursor(Qt::ArrowCursor);
-        return;
+    if (!m_dragging) {
+        if (propertyComboPopupVisible()) {
+            setCursor(Qt::ArrowCursor);
+            return;
+        }
+        if (QWidget *widget = childAt(widgetPoint.toPoint())) {
+            setCursor(widget->cursor());
+            return;
+        }
     }
 
     // 2. 【截图】【精确定位】只有画面中实际绘制的软件指针才接管系统光标

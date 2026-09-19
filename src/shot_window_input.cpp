@@ -443,6 +443,7 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
             revealSelectionInfo();
             updateToolbarGeometry();
             updateActionToolbarGeometry();
+            scheduleUiCursorRefresh(event->position());
             update();
             return;
         }
@@ -474,6 +475,7 @@ void ShotWindow::mouseReleaseEvent(QMouseEvent *event)
         revealSelectionInfo();
         updateToolbarGeometry();
         updateActionToolbarGeometry();
+        scheduleUiCursorRefresh(event->position());
         update();
         return;
     }

@@ -332,6 +332,10 @@ private:
     /// @param widgetPoint 指针在窗口内的位置
     /// @return 无返回值
     void updatePointerCursor(QPointF widgetPoint);
+    /// @brief 在动态工具栏完成布局后异步同步释放位置的光标
+    /// @param widgetPoint 最近一次真实指针事件在窗口内的位置
+    /// @return 无返回值
+    void scheduleUiCursorRefresh(QPointF widgetPoint);
     /// @brief 结束中断的指针操作，撤去未提交草稿并恢复抓取控件状态
     /// @return 无返回值
     void cancelPointerInteraction();

@@ -510,6 +510,12 @@ private slots:
         QPushButton *button = toolButton(*m_window, "Pen");
         QVERIFY(button);
         QCOMPARE(button->cursor().shape(), Qt::PointingHandCursor);
+        // The top-level overlay can receive the first motion after a toolbar
+        // appears. It must still expose the cursor of the child under the
+        // event-local pointer position.
+        const QPoint buttonCenter = button->mapTo(m_window.get(), button->rect().center());
+        pointerEvent(*m_window, QEvent::MouseMove, buttonCenter);
+        QCOMPARE(m_window->cursor().shape(), Qt::PointingHandCursor);
         auto *grip = m_window->findChild<QWidget *>(QStringLiteral("toolbarGrip"));
         QVERIFY(grip && grip->isVisible());
         QEnterEvent enter(grip->rect().center(), grip->rect().center(), grip->mapToGlobal(grip->rect().center()));
