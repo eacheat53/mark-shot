@@ -23,6 +23,7 @@ void PinnedImageWindow::startOcr()
         m_copyTextAfterOcr = false;
         return;
     }
+    m_textSelectionOcrAttempted = true;
 
     QTemporaryFile tempFile(QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation).isEmpty()
                                 ? QDir::tempPath()
@@ -117,6 +118,7 @@ void PinnedImageWindow::finishOcr(markshot::providers::ProviderTask *task,
         m_copyTextAfterOcr = false;
     }
     m_ocrTask = nullptr;
+    finishDeferredTextSelection();
     if (!m_ocrTempPath.isEmpty()) {
         QFile::remove(m_ocrTempPath);
         m_ocrTempPath.clear();

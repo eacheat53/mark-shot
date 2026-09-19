@@ -5,6 +5,7 @@
 #include <QWidget>
 
 class QCheckBox;
+class QGridLayout;
 class QLabel;
 class QListWidget;
 class QPushButton;
@@ -22,6 +23,14 @@ public:
     void refresh();
 
 protected:
+    /// @brief 接收应用调色板和系统主题变化，统一刷新窗口外观
+    /// @param event Qt 事件
+    /// @return 事件是否已处理
+    bool event(QEvent *event) override;
+    /// @brief 使用当前主题绘制窗口背景
+    /// @param event 绘制事件
+    /// @return 无返回值
+    void paintEvent(QPaintEvent *event) override;
     /// @brief 重新激活窗口时同步其他截图会话新增或删除的历史
     /// @param event 窗口状态变更事件
     /// @return 无返回值
@@ -33,6 +42,12 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private:
+    /// @brief 根据设置页主题刷新窗口配色与操作图标
+    /// @return 无返回值
+    void applyTheme();
+    /// @brief 窄窗口使用两列操作按钮，保证按钮文字完整显示
+    /// @return 无返回值
+    void updateActionLayout();
     /// @brief 获取当前选择的历史标识
     /// @return 文件标识，没有选择时为空
     QString selectedFileName() const;
@@ -77,6 +92,8 @@ private:
     QLabel *m_status = nullptr;
     QCheckBox *m_enabled = nullptr;
     QPushButton *m_clear = nullptr;
+    QGridLayout *m_actions = nullptr;
+    int m_actionColumns = 3;
     QVector<QPushButton *> m_imageActions;
 };
 
