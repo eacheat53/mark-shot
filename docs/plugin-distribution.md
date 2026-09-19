@@ -92,3 +92,30 @@ ctest --test-dir build --output-on-failure
 
 如果插件要进入 GitHub 插件市场，还需要把 Release 动态库资产写入市场索引。
 索引格式见 `docs/plugin-index-schema.md`，示例见 `examples/plugin-index.example.json`。
+
+## PP-OCR Linux 发布检查
+
+OCR 插件只使用 ONNX Runtime 的公开 API，不应直接链接 Protobuf、Abseil 或
+UTF-8 支持库。直接链接这些内部依赖会把构建环境的精确库版本写入插件，导致
+系统升级后出现 `libprotobuf.so.<旧版本>` 等加载错误。
+
+仓库测试通过市场安装器安装真实动态库，再使用 `QPluginLoader` 加载。没有模型时
+仍检查插件加载；模型齐全时继续验证中文和英文识别。Linux 还检查 ELF 直接依赖：
+
+```bash
+cmake --build build --target mark-shot-ocr-rapid-plugin-test --parallel
+QT_QPA_PLATFORM=offscreen ctest --test-dir build -R '^ocr-rapid-plugin' --output-on-failure --no-tests=error
+```
+
+发布资产应取自 `cmake --install` 的安装目录。下载发布资产后，可以直接验证安装和识别：
+
+```bash
+QT_QPA_PLATFORM=offscreen \
+MARK_SHOT_TEST_OCR_PLUGIN_PATH=/path/to/downloaded-plugin.so \
+build/mark-shot-ocr-rapid-plugin-test
+```
+
+`v0.1.52` 的 Linux `r1` 修订资产使用 Qt 6.11 和 ONNX Runtime 1.29 构建，
+需要对应或更新的兼容运行时，以及 PP-OCR 模型。它移除了无用的内部依赖绑定；
+用户仍需安装 ONNX Runtime。修订资产使用独立文件名，市场索引同步更新下载地址、
+文件大小和 SHA-256，避免继续分发旧库。

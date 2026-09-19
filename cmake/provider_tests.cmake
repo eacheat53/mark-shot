@@ -62,35 +62,18 @@ target_link_libraries(mark-shot-rapid-ocr-word-segments-test
 add_test(NAME rapid-ocr-word-segments COMMAND mark-shot-rapid-ocr-word-segments-test)
 
 if(TARGET mark-shot-ocr-rapid)
-    # pkg_check_modules 的 IMPORTED target 为目录作用域，测试目录内重新探测
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(OnnxRuntimeTest QUIET IMPORTED_TARGET libonnxruntime)
-    endif()
-    if(NOT OnnxRuntimeTest_FOUND)
-        find_package(onnxruntime CONFIG QUIET)
-    endif()
-endif()
-
-if(TARGET mark-shot-ocr-rapid AND (OnnxRuntimeTest_FOUND OR onnxruntime_FOUND))
+    # 1. 【OCR】【插件测试】测试进程仅链接 Qt，避免预加载依赖掩盖动态库加载错误
     qt_add_executable(mark-shot-ocr-rapid-plugin-test
         tests/ocr_rapid_plugin_test.cpp
-        plugins/ocr-rapid/rapid_det_model.cpp
-        plugins/ocr-rapid/rapid_det_model.h
         plugins/ocr-rapid/rapid_model_paths.cpp
         plugins/ocr-rapid/rapid_model_paths.h
-        plugins/ocr-rapid/rapid_ocr_plugin.cpp
-        plugins/ocr-rapid/rapid_ocr_plugin.h
-        plugins/ocr-rapid/rapid_ocr_word_segments.cpp
-        plugins/ocr-rapid/rapid_ocr_word_segments.h
-        plugins/ocr-rapid/rapid_onnx_session.cpp
-        plugins/ocr-rapid/rapid_onnx_session.h
-        plugins/ocr-rapid/rapid_rec_model.cpp
-        plugins/ocr-rapid/rapid_rec_model.h
+        src/marketplace/plugin_installer.cpp
+        src/providers/provider_plugin_paths.cpp
     )
     target_include_directories(mark-shot-ocr-rapid-plugin-test PRIVATE
         plugins/ocr-rapid
         plugin-sdk
+        src
     )
     target_link_libraries(mark-shot-ocr-rapid-plugin-test
         PRIVATE
@@ -98,12 +81,20 @@ if(TARGET mark-shot-ocr-rapid AND (OnnxRuntimeTest_FOUND OR onnxruntime_FOUND))
             Qt6::Gui
             Qt6::Test
     )
-    if(OnnxRuntimeTest_FOUND)
-        target_link_libraries(mark-shot-ocr-rapid-plugin-test PRIVATE PkgConfig::OnnxRuntimeTest)
-    else()
-        target_link_libraries(mark-shot-ocr-rapid-plugin-test PRIVATE onnxruntime::onnxruntime)
-    endif()
+    target_compile_definitions(mark-shot-ocr-rapid-plugin-test PRIVATE
+        MARK_SHOT_TEST_OCR_PLUGIN_PATH="$<TARGET_FILE:mark-shot-ocr-rapid>"
+    )
+    add_dependencies(mark-shot-ocr-rapid-plugin-test mark-shot-ocr-rapid)
     add_test(NAME ocr-rapid-plugin COMMAND mark-shot-ocr-rapid-plugin-test)
+    set_tests_properties(ocr-rapid-plugin PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        add_test(NAME ocr-rapid-plugin-dependencies
+            COMMAND ${CMAKE_COMMAND}
+                "-DREADELF=${CMAKE_READELF}"
+                "-DPLUGIN_PATH=$<TARGET_FILE:mark-shot-ocr-rapid>"
+                -P "${CMAKE_SOURCE_DIR}/tests/ocr_plugin_dependencies.cmake"
+        )
+    endif()
 endif()
 
 if(TARGET mark-shot-translate-openai)
