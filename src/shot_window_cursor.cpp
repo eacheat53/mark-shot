@@ -107,7 +107,7 @@ void ShotWindow::updatePointerCursor(QPointF widgetPoint)
         return;
     }
     if (m_mode == Mode::Selecting) {
-        setCursor(captureCrossCursor());
+        setCursor(captureCrossCursor(devicePixelRatioF()));
         return;
     }
     if (!m_dragging && m_wheelPreview == WheelPreview::ToolSize && wheelPreviewVisible()) {
@@ -124,7 +124,7 @@ void ShotWindow::updatePointerCursor(QPointF widgetPoint)
     }
     if (m_tool == Tool::Select) {
         if (m_dragging && m_annotationSelectionBoxActive) {
-            setCursor(captureCrossCursor());
+            setCursor(captureCrossCursor(devicePixelRatioF()));
             return;
         }
         SelectionDrag drag = m_dragging ? m_annotationDrag : SelectionDrag::None;
@@ -150,5 +150,5 @@ void ShotWindow::updatePointerCursor(QPointF widgetPoint)
     }
 
     // 5. 【截图】【标注工具】文字使用插入光标，其余绘制工具使用统一十字
-    setCursor(m_tool == Tool::Text ? Qt::IBeamCursor : captureCrossCursor());
+    setCursor(m_tool == Tool::Text ? Qt::IBeamCursor : captureCrossCursor(devicePixelRatioF()));
 }

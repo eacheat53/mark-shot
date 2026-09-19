@@ -10,9 +10,10 @@ namespace markshot::shot {
 
 /**
  * 创建截图选区与标注共用的细线十字光标
+ * @param devicePixelRatio 当前输出的设备像素比
  * @return 使用对齐透明画布且热点位于留空中心的光标
  */
-QCursor captureCrossCursor();
+QCursor captureCrossCursor(qreal devicePixelRatio = 1.0);
 
 /// @brief 绘制与系统光标一致的软件十字，保留中心像素以便精确定位
 /// @param painter 目标绘制器，函数返回时恢复原绘制状态

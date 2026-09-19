@@ -1,9 +1,41 @@
 #include "capture_cross_cursor.h"
 
+#include <QHash>
 #include <QPainter>
 #include <QPixmap>
 
+#include <algorithm>
+#include <cmath>
+
 namespace markshot::shot {
+namespace {
+
+constexpr int kLogicalCanvasSize = 64;
+constexpr int kArgbBytesPerPixel = 4;
+constexpr int kRequiredRowAlignment = 256;
+constexpr int kCanvasPixelAlignment = kRequiredRowAlignment / kArgbBytesPerPixel;
+
+int cursorResourceScale(qreal devicePixelRatio)
+{
+    return std::max(1, static_cast<int>(std::ceil(devicePixelRatio)));
+}
+
+QCursor createCaptureCrossCursor(int resourceScale)
+{
+    const int canvasSize = kLogicalCanvasSize * resourceScale;
+    static_assert(kLogicalCanvasSize % kCanvasPixelAlignment == 0);
+    const QPoint hotspot(canvasSize / 2, canvasSize / 2);
+
+    QPixmap pixmap(canvasSize, canvasSize);
+    pixmap.setDevicePixelRatio(resourceScale);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    drawCaptureCrossCursor(painter, QPointF(hotspot) / resourceScale);
+    painter.end();
+    return QCursor(pixmap, hotspot.x(), hotspot.y());
+}
+
+}
 
 void drawCaptureCrossCursor(QPainter &painter, QPointF position)
 {
@@ -28,20 +60,16 @@ QRect captureCrossCursorRect(QPointF position)
     return QRect(position.toPoint() - QPoint(12, 12), QSize(25, 25));
 }
 
-QCursor captureCrossCursor()
+QCursor captureCrossCursor(qreal devicePixelRatio)
 {
-    // 1. 【标注】【十字光标】缓存图案并保留 256 字节行步长，避免硬件光标出现错位
-    static const QCursor cursor = [] {
-        constexpr int canvasSize = 64;
-        const QPoint hotspot(canvasSize / 2, canvasSize / 2);
-        QPixmap pixmap(canvasSize, canvasSize);
-        pixmap.fill(Qt::transparent);
-        QPainter painter(&pixmap);
-        drawCaptureCrossCursor(painter, hotspot);
-        painter.end();
-        return QCursor(pixmap, hotspot.x(), hotspot.y());
-    }();
-    return cursor;
+    // 1. 【标注】【十字光标】按整数资源倍率缓存，兼顾高分屏清晰度与 256 字节行步长
+    static QHash<int, QCursor> cursors;
+    const int resourceScale = cursorResourceScale(devicePixelRatio);
+    const auto existing = cursors.constFind(resourceScale);
+    if (existing != cursors.cend()) {
+        return *existing;
+    }
+    return cursors.insert(resourceScale, createCaptureCrossCursor(resourceScale)).value();
 }
 
 }
