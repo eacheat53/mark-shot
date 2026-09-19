@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "generatedAt": "2026-09-19T01:41:54Z",
+    "generatedAt": "2026-09-19T20:07:08Z",
     "plugins": [
         {
             "id": "mark-shot-ocr-rapid",
@@ -31,11 +31,11 @@
                 {
                     "platform": "windows",
                     "architecture": "x86_64",
-                    "fileName": "mark-shot-plugin-ocr-rapid-v0.1.52-windows-x86_64.dll",
+                    "fileName": "mark-shot-plugin-ocr-rapid-v0.1.52-windows-x86_64-r1.dll",
                     "libraryFileName": "mark-shot-ocr-rapid.dll",
-                    "downloadUrl": "https://github.com/jswysnemc/mark-shot/releases/download/v0.1.52/mark-shot-plugin-ocr-rapid-v0.1.52-windows-x86_64.dll",
-                    "sha256": "d3cf400361500a9644db2108d0e481673f32225df79b5fd74f2b8a049c86e44e",
-                    "size": 166757
+                    "downloadUrl": "https://github.com/jswysnemc/mark-shot/releases/download/v0.1.52/mark-shot-plugin-ocr-rapid-v0.1.52-windows-x86_64-r1.dll",
+                    "sha256": "ea6a91fda3a55d2fc8c33ed3da5dece01e531f6b861ea36adc493877679d0a8f",
+                    "size": 167703
                 }
             ]
         },
