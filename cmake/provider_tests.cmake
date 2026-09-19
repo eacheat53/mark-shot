@@ -85,6 +85,29 @@ if(TARGET mark-shot-ocr-rapid)
         MARK_SHOT_TEST_OCR_PLUGIN_PATH="$<TARGET_FILE:mark-shot-ocr-rapid>"
     )
     add_dependencies(mark-shot-ocr-rapid-plugin-test mark-shot-ocr-rapid)
+    if(WIN32)
+        # 2. 【OCR】【测试运行时】Windows 先搜索程序目录，再搜索系统目录和 PATH
+        # 将构建所用的运行时放在测试入口旁，避免误加载 System32 中旧版 ONNX Runtime
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(OcrTestRuntime QUIET libonnxruntime)
+        endif()
+        if(NOT OcrTestRuntime_FOUND)
+            find_package(onnxruntime CONFIG QUIET)
+        endif()
+        set(ocr_runtime_hints "$ENV{MSYSTEM_PREFIX}/bin"
+            "${onnxruntime_DIR}/../../bin" "${onnxruntime_DIR}/../../../bin")
+        foreach(library_dir IN LISTS OcrTestRuntime_LIBRARY_DIRS)
+            list(APPEND ocr_runtime_hints "${library_dir}/../bin")
+        endforeach()
+        find_file(MARK_SHOT_TEST_ONNX_RUNTIME_DLL NAMES onnxruntime.dll libonnxruntime.dll
+            HINTS ${ocr_runtime_hints} NO_DEFAULT_PATH REQUIRED)
+        add_custom_command(TARGET mark-shot-ocr-rapid-plugin-test POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${MARK_SHOT_TEST_ONNX_RUNTIME_DLL}"
+                "$<TARGET_FILE_DIR:mark-shot-ocr-rapid-plugin-test>"
+        )
+    endif()
     add_test(NAME ocr-rapid-plugin COMMAND mark-shot-ocr-rapid-plugin-test)
     set_tests_properties(ocr-rapid-plugin PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
