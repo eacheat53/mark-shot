@@ -1,4 +1,5 @@
 #include "marketplace/plugin_installer.h"
+#include "marketplace/plugin_updates.h"
 
 #include "providers/provider_plugin_paths.h"
 
@@ -107,23 +108,9 @@ PluginInstallResult installPluginAsset(const PluginInstallRequest &request)
         return failedResult(QStringLiteral("Failed to create plugin destination directory"));
     }
 
-    // 2. 复制到临时文件，再替换最终文件，降低中途失败留下半文件的概率
+    // 2. 【插件】【安装存储】新库原子写入，替换已有插件时保留到下次启动
     const QString destinationPath = destinationDir.absoluteFilePath(fileName);
-    const QString temporaryPath = destinationPath + QStringLiteral(".installing");
-    QFile::remove(temporaryPath);
-    if (!QFile::copy(sourceInfo.absoluteFilePath(), temporaryPath)) {
-        return failedResult(QStringLiteral("Failed to copy plugin asset"));
-    }
-    QFile::remove(destinationPath);
-    if (!QFile::rename(temporaryPath, destinationPath)) {
-        QFile::remove(temporaryPath);
-        return failedResult(QStringLiteral("Failed to move plugin asset into plugin directory"));
-    }
-
-    PluginInstallResult result;
-    result.success = true;
-    result.installedPath = destinationPath;
-    return result;
+    return storePluginAsset(sourceInfo.absoluteFilePath(), destinationPath);
 }
 
 }  // namespace markshot::marketplace

@@ -53,15 +53,15 @@ QStringList pluginSearchDirs()
 {
     QStringList dirs;
     const QString appDir = QCoreApplication::applicationDirPath();
-    // 1. 系统级与应用相邻目录，支持安装包和免安装目录。
+    // 1. 【插件】【用户更新】市场安装的新版本优先于安装包附带的旧版本
+    addSearchDir(&dirs, userPluginDirectory());
+    // 2. 系统级与应用相邻目录，支持安装包和免安装目录
     addSearchDir(&dirs, QDir(appDir).filePath(QStringLiteral("plugins")));
     addSearchDir(&dirs, QDir(appDir).filePath(QStringLiteral("../lib/mark-shot/plugins")));
     addSearchDir(&dirs, QDir(appDir).filePath(QStringLiteral("../lib64/mark-shot/plugins")));
     for (const QString &path : QCoreApplication::libraryPaths()) {
         addSearchDir(&dirs, QDir(path).filePath(QStringLiteral("mark-shot/plugins")));
     }
-    // 2. 用户级插件目录，插件市场和手工安装都写入这里。
-    addSearchDir(&dirs, userPluginDirectory());
     return dirs;
 }
 

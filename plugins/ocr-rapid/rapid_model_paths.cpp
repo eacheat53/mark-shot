@@ -1,4 +1,5 @@
 #include "rapid_model_paths.h"
+#include "markshot/ocr_model_directory.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -78,7 +79,7 @@ QString findDictionary(const QStringList &dirs, const QString &fileName)
 
 bool RapidModelPaths::isComplete() const
 {
-    return !detModel.isEmpty() && !recModel.isEmpty() && !recDictionary.isEmpty();
+    return QFileInfo(detModel).isFile() && QFileInfo(recModel).isFile() && QFileInfo(recDictionary).isFile();
 }
 
 QStringList rapidModelSearchDirs()
@@ -89,7 +90,8 @@ QStringList rapidModelSearchDirs()
     if (!envDir.isEmpty()) {
         addDir(&dirs, envDir);
     }
-    // 2. 用户数据模型目录
+    // 2. 【OCR】【模型目录】与下载器统一使用平台标准目录，并兼容旧 Linux 风格路径
+    addDir(&dirs, markshot::plugin::defaultOcrModelDirectory());
     addDir(&dirs, QDir(dataHomeDir()).filePath(QStringLiteral("mark-shot/models")));
     // 3. 复用旧 rapidocr venv 已下载的模型，老用户免重复下载
     const QDir venvLib(QDir(dataHomeDir()).filePath(QStringLiteral("mark-shot/ocr-venv/lib")));

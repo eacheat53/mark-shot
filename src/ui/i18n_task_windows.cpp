@@ -5,6 +5,8 @@ namespace markshot::i18n {
 const QHash<QString, QString> &taskWindowChineseTable()
 {
     static const QHash<QString, QString> table = {
+        {QStringLiteral("%1 update downloaded. Quit all Mark Shot instances and restart to apply it."),
+         QStringLiteral("%1 更新已下载。请退出所有 Mark Shot 进程，重新启动后生效。")},
         {QStringLiteral("Text Recognition"), QStringLiteral("文字识别")},
         {QStringLiteral("Recognized text"), QStringLiteral("识别原文")},
         {QStringLiteral("Translated text"), QStringLiteral("译文")},

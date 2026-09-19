@@ -3,7 +3,10 @@
 #include "providers/provider_plugin_info.h"
 
 #include <QStringList>
+#include <QHash>
 #include <QVector>
+
+class QObject;
 
 namespace markshot::plugin {
 class OcrProviderPlugin;
@@ -68,6 +71,7 @@ private:
 
     bool m_loaded = false;
     QVector<ProviderPluginInfo> m_pluginInfos;
+    QHash<QString, QObject *> m_pluginInstances;
     QVector<markshot::plugin::OcrProviderPlugin *> m_ocrProviders;
     QVector<markshot::plugin::TranslateProviderPlugin *> m_translateProviders;
     QVector<markshot::plugin::CodeScanProviderPlugin *> m_codeScanProviders;
