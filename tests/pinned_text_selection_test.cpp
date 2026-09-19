@@ -10,7 +10,6 @@
 #include <QJsonObject>
 #include <QMouseEvent>
 #include <QTemporaryDir>
-#include <QTextStream>
 #include <QtTest>
 
 namespace {
@@ -52,7 +51,7 @@ private slots:
     void selectsTextWithoutAutomaticOcr()
     {
         QFETCH(qreal, dpr);
-        const QString command = markshot::shot::shellQuote(QCoreApplication::applicationFilePath())
+        const QString command = markshot::shot::shellQuote(QString::fromUtf8(MARK_SHOT_TEST_OCR_FIXTURE_PATH))
             + QStringLiteral(" --ocr-fixture");
         QVERIFY(markshot::writeAppConfigRoot({
             {QStringLiteral("ocr"), QJsonObject{{QStringLiteral("enabled"), true},
@@ -102,7 +101,7 @@ private slots:
         QFETCH(bool, selectionEnabled);
         QFETCH(bool, ocrEnabled);
         QFETCH(bool, emptyResult);
-        const QString command = markshot::shot::shellQuote(QCoreApplication::applicationFilePath())
+        const QString command = markshot::shot::shellQuote(QString::fromUtf8(MARK_SHOT_TEST_OCR_FIXTURE_PATH))
             + (emptyResult ? QStringLiteral(" --ocr-empty") : QStringLiteral(" --ocr-fixture"));
         QVERIFY(markshot::writeAppConfigRoot({
             {QStringLiteral("ocr"), QJsonObject{{QStringLiteral("enabled"), ocrEnabled},
@@ -126,18 +125,13 @@ private slots:
 };
 
 /**
- * 【贴图测试】【隔离环境】运行窗口测试或输出受控 OCR 结果
+ * 【贴图测试】【隔离环境】运行窗口测试
  * @param argc 参数数量
  * @param argv 参数列表
  * @return 测试退出码
  */
 int main(int argc, char **argv)
 {
-    if (argc > 1 && (QByteArray(argv[1]) == "--ocr-fixture" || QByteArray(argv[1]) == "--ocr-empty")) {
-        QTextStream(stdout) << (QByteArray(argv[1]) == "--ocr-empty" ? "[]"
-            : R"({"tokens":[{"text":"Hello","box":[40,40,60,40],"line":0,"index":0},{"text":"world","box":[120,40,60,40],"line":0,"index":1}]})");
-        return 0;
-    }
     QTemporaryDir isolated;
     if (!isolated.isValid()) {
         return 1;

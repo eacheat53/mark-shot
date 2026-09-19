@@ -1,4 +1,17 @@
-# 1. 【窗口测试】【真实入口】复用应用对象，分别检查贴图交互和历史窗口
+# 1. 【窗口测试】【OCR数据】独立控制台入口负责输出，避免窗口程序的标准输出差异
+qt_add_executable(mark-shot-ocr-fixture tests/fixtures/ocr_fixture.cpp)
+set_target_properties(mark-shot-ocr-fixture PROPERTIES WIN32_EXECUTABLE FALSE)
+target_link_libraries(mark-shot-ocr-fixture PRIVATE Qt6::Core)
+
+qt_add_executable(mark-shot-shell-command-test tests/shell_command_test.cpp src/shell_command.cpp)
+target_include_directories(mark-shot-shell-command-test PRIVATE src)
+target_link_libraries(mark-shot-shell-command-test PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(mark-shot-shell-command-test PRIVATE
+    MARK_SHOT_TEST_OCR_FIXTURE_PATH="$<TARGET_FILE:mark-shot-ocr-fixture>")
+add_dependencies(mark-shot-shell-command-test mark-shot-ocr-fixture)
+add_test(NAME shell-command COMMAND mark-shot-shell-command-test -o -,txt)
+
+# 2. 【窗口测试】【真实入口】复用应用对象，分别检查贴图交互和历史窗口
 foreach(window_test IN ITEMS pinned-text-selection capture-history-window)
     string(REPLACE "-" "_" source_name "${window_test}")
     qt_add_executable(mark-shot-${window_test}-test
@@ -14,7 +27,11 @@ foreach(window_test IN ITEMS pinned-text-selection capture-history-window)
         set_target_properties(mark-shot-${window_test}-test PROPERTIES WIN32_EXECUTABLE TRUE)
     endif()
     add_dependencies(mark-shot-${window_test}-test mark-shot)
-    add_test(NAME ${window_test} COMMAND mark-shot-${window_test}-test)
+    add_test(NAME ${window_test} COMMAND mark-shot-${window_test}-test -o -,txt)
     set_tests_properties(${window_test} PROPERTIES TIMEOUT 30
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_STYLE_OVERRIDE=Fusion;QT_SCALE_FACTOR=1")
 endforeach()
+
+target_compile_definitions(mark-shot-pinned-text-selection-test PRIVATE
+    MARK_SHOT_TEST_OCR_FIXTURE_PATH="$<TARGET_FILE:mark-shot-ocr-fixture>")
+add_dependencies(mark-shot-pinned-text-selection-test mark-shot-ocr-fixture)

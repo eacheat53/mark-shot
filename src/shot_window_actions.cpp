@@ -62,9 +62,10 @@ void ShotWindow::runExtensionCommand(const ExtensionCommand &command)
         QApplication::processEvents();
     }
 
-    const bool started = QProcess::startDetached(markshot::commandShellProgram(),
-                                                 markshot::commandShellArguments(commandLine),
-                                                 workingDirectory);
+    QProcess process;
+    markshot::setShellCommand(&process, commandLine);
+    process.setWorkingDirectory(workingDirectory);
+    const bool started = process.startDetached();
     if (started && command.closeOnStart) {
         close();
         return;

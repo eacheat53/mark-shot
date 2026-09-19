@@ -643,8 +643,7 @@ QVector<WindowInfo> collectConfiguredWindowInfos(const QRect &captureGeometry,
     }
 
     QProcess process;
-    process.setProgram(commandShellProgram());
-    process.setArguments(commandShellArguments(config->command));
+    setShellCommand(&process, config->command);
     process.setProcessEnvironment(scriptEnvironment(captureGeometry,
                                                    outputName,
                                                    allOutputs,
