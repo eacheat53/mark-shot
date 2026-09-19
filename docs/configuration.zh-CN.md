@@ -212,7 +212,7 @@ Mark Shot 在 Linux 上从 `~/.config/mark-shot/config.json` 读取应用配置�
 | `upload.command` | 字符串 | `""` | 自定义图床上传命令。支持 `{image}`、`{imagePath}` 和 `{imageUrl}` 占位符；如果没有占位符，Mark Shot 会把临时 PNG 路径追加到命令末尾。命令必须输出 JSON `{"url":"...","deleteUrl":"...","errors":[]}` 或纯文本 URL（以 `http://`/`https://` 开头）。留空时使用内置 `mark-shot-upload` 脚本，通过 `upload.env` 配置图床参数。别名：`imageUpload.command`、`uploader.command`、`imageHost.command`。 |
 | `upload.timeoutMs` | 数值 | `60000` | 上传命令超时时间。环境变量 `MARK_SHOT_UPLOAD_TIMEOUT_MS` 可以覆盖该值。 |
 | `upload.env` | 对象 | `{}` | 传递给上传命令的环境变量。会合并到系统环境变量之上。用于配置内置 `mark-shot-upload` 脚本的图床参数（端点、字段、API Key、认证方案、URL 提取路径等）。别名：`environment`、`envVars`、`variables`。 |
-| `pinnedWindow.autoOcr` | 布尔值 | `false` | 控制贴图窗口创建后是否立即在后台自动启动 OCR 文本识别。如果禁用，则仅在右键菜单中触发复制文字或翻译时按需识别。别名：`pinned`、`pin`。 |
+| `pinnedWindow.autoOcr` | 布尔值 | `false` | 控制贴图窗口创建后是否立即在后台自动启动 OCR 文本识别。如果禁用，则在首次拖选文字、复制文字或翻译时按需识别。首次拖选会等待文字位置就绪，并保留按下到释放的选区。别名：`pinned`、`pin`。 |
 | `pinnedWindow.alwaysOnTop` | 布尔值 | `true` | 控制钉图窗口是否保持在其他窗口之上。右键菜单可切换该值并写回 `config.json`。GNOME Wayland 在辅助扩展可用时走扩展接口。KDE Plasma Wayland 通过会话内 KWin 脚本设置 `keepAbove`，不改用 layer-shell。 |
 | `pinnedWindow.border` | 布尔值/对象 | `true` | 贴图窗口外边框的配置。可以为布尔值，或者包含 `enabled` (布尔值)、`color` (十六进制/名称/RGBA对象) 和 `width` (浮点数，`1.0` - `12.0`) 的配置对象。也支持 `borderEnabled`、`borderColor`、`borderWidth` 平铺配置。 |
 | `scrollCapture.frame` | 布尔值/数值/对象 | `5` | 滚动截图外框偏移。数值表示实际捕获区域和外框之间的像素间距；`false` 关闭外框。对象形式支持 `enabled` 和 `gap`。别名：`captureFrame`、`border`、`outline`，也支持平铺的 `frameEnabled` / `frameGap`。 |

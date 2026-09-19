@@ -156,6 +156,7 @@ bool PinnedImageWindow::event(QEvent *event)
         // 1. 【钉图】【拖动收尾】隐藏时结束输入状态，也清理等待原图绘制的最后一帧预览
         m_moving = false;
         m_selectingText = false;
+        m_deferredTextSelection.reset();
         finishResizeDrag(QPointF(-1, -1));
         if (m_layerShellDragPreview) {
             m_layerShellDragPreview->hide();
@@ -177,6 +178,12 @@ void PinnedImageWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         if (startResizeDrag(event)) {
+            event->accept();
+            return;
+        }
+
+        // 1. 【贴图】【按需拖选】首次手势等待文字位置，避免把文字拖选误判为窗口移动
+        if (deferTextSelection(event->position(), event->globalPosition().toPoint())) {
             event->accept();
             return;
         }
@@ -217,6 +224,16 @@ void PinnedImageWindow::mousePressEvent(QMouseEvent *event)
 
 void PinnedImageWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_deferredTextSelection) {
+        if (!m_deferredTextSelection->released) {
+            m_deferredTextSelection->focus = event->position();
+            if (!event->buttons().testFlag(Qt::LeftButton)) {
+                m_deferredTextSelection->released = true;
+            }
+        }
+        event->accept();
+        return;
+    }
     const QPointF cursorPosition = pinnedLocalPointForInput(event->position());
     if (!event->buttons().testFlag(Qt::LeftButton)) {
         m_moving = false;
@@ -262,6 +279,12 @@ void PinnedImageWindow::mouseMoveEvent(QMouseEvent *event)
 void PinnedImageWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        if (m_deferredTextSelection) {
+            m_deferredTextSelection->focus = event->position();
+            m_deferredTextSelection->released = true;
+            event->accept();
+            return;
+        }
         const QPointF cursorPosition = pinnedLocalPointForInput(event->position());
         m_moving = false;
         if (isPinnedResizeDirection(m_resizeDrag.direction)) {
@@ -300,6 +323,10 @@ void PinnedImageWindow::enterEvent(QEnterEvent *event)
 
 void PinnedImageWindow::wheelEvent(QWheelEvent *event)
 {
+    if (m_deferredTextSelection) {
+        event->accept();
+        return;
+    }
     const QPoint delta = event->angleDelta();
     const QPoint pixelDelta = event->pixelDelta();
     if (delta.y() == 0 && pixelDelta.y() == 0) {
@@ -324,6 +351,10 @@ void PinnedImageWindow::wheelEvent(QWheelEvent *event)
 void PinnedImageWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        if (m_deferredTextSelection) {
+            event->accept();
+            return;
+        }
         const std::optional<int> token = m_config.textSelectionCopyEnabled
             ? tokenAt(widgetToImage(event->position()))
             : std::nullopt;
@@ -413,6 +444,11 @@ void PinnedImageWindow::contextMenuEvent(QContextMenuEvent *event)
 
 void PinnedImageWindow::keyPressEvent(QKeyEvent *event)
 {
+    if (event->matches(QKeySequence::Copy) && m_deferredTextSelection) {
+        m_deferredTextSelection->copyWhenReady = true;
+        event->accept();
+        return;
+    }
     if (event->matches(QKeySequence::Copy) && hasTextSelection()) {
         copySelectedText();
         event->accept();
@@ -427,6 +463,10 @@ void PinnedImageWindow::keyPressEvent(QKeyEvent *event)
 
 void PinnedImageWindow::rotateImage(qreal degrees)
 {
+    // 1. 【贴图】【旋转识别】旧任务的文字坐标不再适用于旋转后的图像
+    cancelOcr();
+    m_deferredTextSelection.reset();
+    m_textSelectionOcrAttempted = false;
     const QPoint center = frameGeometry().center();
     m_pixmap = m_pixmap.transformed(QTransform().rotate(degrees), Qt::SmoothTransformation);
     m_imageSize = m_pixmap.size();
@@ -527,6 +567,7 @@ void PinnedImageWindow::setTextSelectionCopyEnabled(bool enabled)
 
     m_config.textSelectionCopyEnabled = enabled;
     if (!enabled) {
+        m_deferredTextSelection.reset();
         clearTextSelection();
     }
     updateCursorForPosition(mapFromGlobal(QCursor::pos()));

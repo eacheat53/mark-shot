@@ -34,6 +34,8 @@ QPushButton *historyButton(const QString &text, ShotWindow::Action action, QWidg
     auto *button = new QPushButton(markshot::ui::makeToolIcon(action), text, parent);
     button->setIconSize(QSize(16, 16));
     button->setMinimumHeight(30);
+    button->setProperty("historyAction", static_cast<int>(action));
+    button->setCursor(Qt::PointingHandCursor);
     return button;
 }
 
@@ -44,14 +46,8 @@ HistoryWindow::HistoryWindow()
     // 1. 【截图历史】【界面】沿用应用面板样式，并按屏幕可用区域限制初始尺寸
     setAttribute(Qt::WA_DeleteOnClose);
     setWindowTitle(MS_TR("Screenshot History"));
-    setObjectName(QStringLiteral("extensionPanel"));
-    setStyleSheet(markshot::theme::openWithPanelStyleSheet() + QStringLiteral(
-        "QPushButton:disabled { color: rgba(229, 231, 235, 80); }"
-        "QCheckBox { color: #E5E7EB; spacing: 8px; }"
-        "QCheckBox::indicator { width: 14px; height: 14px; border-radius: 3px;"
-        " border: 1px solid #6B7280; background: #111827; }"
-        "QCheckBox::indicator:checked { background: #2DD4BF; border-color: #5EEAD4; }"));
-    setFont(markshot::theme::uiFont(12));
+    setObjectName(QStringLiteral("historyWindow"));
+    setFont(markshot::theme::uiFont(10));
     const QSize available = screen() ? screen()->availableGeometry().size() - QSize(24, 48) : QSize(800, 520);
     setMinimumSize(QSize(440, 320).boundedTo(available));
     resize(QSize(800, 520).boundedTo(available));
@@ -60,8 +56,18 @@ HistoryWindow::HistoryWindow()
     layout->setContentsMargins(12, 10, 12, 10);
     layout->setSpacing(8);
     m_summary = new QLabel(this);
-    m_summary->setFont(markshot::theme::uiFont(13, QFont::DemiBold));
-    layout->addWidget(m_summary);
+    m_summary->setFont(markshot::theme::uiFont(12, QFont::DemiBold));
+    auto *header = new QHBoxLayout;
+    header->addWidget(m_summary, 1);
+    auto *close = historyButton(QString(), ShotWindow::Action::Cancel, this);
+    close->setObjectName(QStringLiteral("historyCloseButton"));
+    close->setProperty("role", QStringLiteral("quiet"));
+    close->setFixedSize(32, 32);
+    close->setToolTip(MS_TR("Close"));
+    close->setAccessibleName(MS_TR("Close"));
+    connect(close, &QPushButton::clicked, this, &QWidget::close);
+    header->addWidget(close);
+    layout->addLayout(header);
 
     // 2. 【截图历史】【界面】列表与预览可调整宽度，预览始终保持原图比例
     auto *splitter = new QSplitter(Qt::Horizontal, this);
@@ -73,17 +79,11 @@ HistoryWindow::HistoryWindow()
     m_list->setSpacing(3);
     m_list->setSelectionMode(QAbstractItemView::SingleSelection);
     m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_list->setStyleSheet(QStringLiteral(
-        "QListWidget { background: transparent; border: 0; }"
-        "QListWidget::item { padding: 5px; border-radius: 6px; }"
-        "QListWidget::item:selected { color: #E5E7EB; background: rgba(45, 212, 191, 35); }"));
     m_preview = new QLabel(splitter);
     m_preview->setObjectName(QStringLiteral("historyPreview"));
-    m_preview->setMinimumSize(180, 140);
+    m_preview->setMinimumSize(180, 100);
     m_preview->setAlignment(Qt::AlignCenter);
     m_preview->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    m_preview->setStyleSheet(QStringLiteral(
-        "background: rgba(0, 0, 0, 35); border-radius: 8px; padding: 6px;"));
     splitter->addWidget(m_list);
     splitter->addWidget(m_preview);
     splitter->setStretchFactor(1, 1);
@@ -94,7 +94,7 @@ HistoryWindow::HistoryWindow()
     connect(m_list, &QListWidget::itemDoubleClicked, this, [this] { editSelected(); });
 
     // 3. 【截图历史】【操作】复用复制、标注和钉图入口，历史再次复制时不重复入库
-    auto *actions = new QGridLayout;
+    m_actions = new QGridLayout;
     auto *copy = historyButton(MS_TR("Copy"), ShotWindow::Action::Copy, this);
     auto *edit = historyButton(MS_TR("Edit"), ShotWindow::Action::ToolPen, this);
     auto *pin = historyButton(MS_TR("Pin"), ShotWindow::Action::Pin, this);
@@ -104,9 +104,9 @@ HistoryWindow::HistoryWindow()
     m_imageActions = {copy, edit, pin, save, remove};
     const QVector<QPushButton *> buttons = {copy, edit, pin, save, remove, m_clear};
     for (int index = 0; index < buttons.size(); ++index) {
-        actions->addWidget(buttons.at(index), index / 3, index % 3);
+        m_actions->addWidget(buttons.at(index), index / 3, index % 3);
     }
-    layout->addLayout(actions);
+    layout->addLayout(m_actions);
     copy->setShortcut(QKeySequence::Copy);
     remove->setShortcut(QKeySequence(Qt::Key_Delete));
     connect(copy, &QPushButton::clicked, this, [this] { copySelected(); });
@@ -121,11 +121,13 @@ HistoryWindow::HistoryWindow()
     connect(m_enabled, &QCheckBox::toggled, this, [this](bool enabled) { setRecordingEnabled(enabled); });
     layout->addWidget(m_enabled);
     m_status = new QLabel(this);
+    m_status->setProperty("role", QStringLiteral("muted"));
     m_status->setWordWrap(true);
-    m_status->setMinimumHeight(18);
+    m_status->hide();
     layout->addWidget(m_status);
     auto *closeShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
     connect(closeShortcut, &QShortcut::activated, this, &QWidget::close);
+    applyTheme();
     refresh();
 }
 
@@ -147,7 +149,10 @@ void HistoryWindow::refresh()
         thumbnail.setDevicePixelRatio(1.0);
         const QString label = entry.createdAt.toLocalTime().toString(QStringLiteral("MM-dd HH:mm:ss"))
             + QStringLiteral("\n%1 × %2").arg(entry.imageSize.width()).arg(entry.imageSize.height());
-        auto *item = new QListWidgetItem(QIcon(QPixmap::fromImage(thumbnail)), label, m_list);
+        const QPixmap pixmap = QPixmap::fromImage(thumbnail);
+        QIcon thumbnailIcon(pixmap);
+        thumbnailIcon.addPixmap(pixmap, QIcon::Selected);
+        auto *item = new QListWidgetItem(thumbnailIcon, label, m_list);
         item->setData(Qt::UserRole, entry.fileName);
         item->setToolTip(entry.createdAt.toLocalTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")));
         if (entry.fileName == selected) {
@@ -190,10 +195,20 @@ void HistoryWindow::updatePreview()
     m_preview->setPixmap(preview);
 }
 
+bool HistoryWindow::event(QEvent *event)
+{
+    const bool handled = QWidget::event(event);
+    if (m_list && (event->type() == QEvent::ApplicationPaletteChange || event->type() == QEvent::ThemeChange)) {
+        applyTheme();
+    }
+    return handled;
+}
+
 void HistoryWindow::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
     if (event->type() == QEvent::ActivationChange && isActiveWindow() && m_list) {
+        applyTheme();
         refresh();
     }
 }
@@ -201,14 +216,33 @@ void HistoryWindow::changeEvent(QEvent *event)
 void HistoryWindow::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
+    updateActionLayout();
     if (m_preview) {
         updatePreview();
+    }
+}
+
+void HistoryWindow::updateActionLayout()
+{
+    const int columns = width() < 600 ? 2 : 3;
+    if (!m_actions || columns == m_actionColumns) {
+        return;
+    }
+    m_actionColumns = columns;
+    QVector<QPushButton *> buttons = m_imageActions;
+    buttons.append(m_clear);
+    for (QPushButton *button : buttons) {
+        m_actions->removeWidget(button);
+    }
+    for (int index = 0; index < buttons.size(); ++index) {
+        m_actions->addWidget(buttons.at(index), index / columns, index % columns);
     }
 }
 
 void HistoryWindow::showStatus(const QString &text)
 {
     m_status->setText(text);
+    m_status->setVisible(!text.isEmpty());
 }
 
 void showHistoryWindow()

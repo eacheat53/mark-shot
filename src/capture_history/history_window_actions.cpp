@@ -1,4 +1,5 @@
 #include "capture_history/history_window.h"
+#include "capture_history/history_window_style.h"
 
 #include "annotation_launch.h"
 #include "app_config_store.h"
@@ -82,8 +83,12 @@ void HistoryWindow::confirmClear()
     auto *dialog = new QDialog(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->setWindowTitle(MS_TR("Clear History"));
-    dialog->setObjectName(QStringLiteral("extensionPanel"));
-    dialog->setStyleSheet(markshot::theme::openWithPanelStyleSheet());
+    dialog->setObjectName(QStringLiteral("historyConfirmDialog"));
+    dialog->setPalette(palette());
+    dialog->setFont(font());
+    const auto mode = markshot::ui::effectiveUiThemeMode(
+        markshot::ui::uiThemeModeFromConfigRoot(markshot::readAppConfigRoot()));
+    dialog->setStyleSheet(historyWindowStyleSheet(mode));
     auto *layout = new QVBoxLayout(dialog);
     auto *label = new QLabel(MS_TR("Delete all screenshot history? Saved files will be kept."), dialog);
     label->setWordWrap(true);

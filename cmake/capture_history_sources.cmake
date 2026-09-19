@@ -5,4 +5,6 @@ set(MARK_SHOT_HISTORY_SOURCES
     src/capture_history/history_window.h
     src/capture_history/history_window.cpp
     src/capture_history/history_window_actions.cpp
+    src/capture_history/history_window_style.cpp
+    src/capture_history/history_window_style.h
 )

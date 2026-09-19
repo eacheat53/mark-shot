@@ -110,6 +110,26 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
+    /// @brief 保存首次识别期间的真实拖选手势
+    struct DeferredTextSelection {
+        QPointF anchor;
+        QPointF focus;
+        QPoint globalAnchor;
+        QPoint windowTopLeft;
+        bool released = false;
+        bool copyWhenReady = false;
+    };
+
+    /// @brief 在尚无 OCR 结果时保留手势并按需启动识别
+    /// @param widgetPoint 按下时的窗口内坐标
+    /// @param globalPoint 按下事件携带的全局坐标
+    /// @return 当前手势需要等待识别时返回 true
+    bool deferTextSelection(QPointF widgetPoint, QPoint globalPoint);
+
+    /// @brief 识别结束后把保留手势解析为文字选区或图片移动
+    /// @return 无返回值
+    void finishDeferredTextSelection();
+
     /// @brief 绘制完整图片及覆盖层，供原窗口和拖动预览共同使用
     /// @param painter 目标窗口的绘制器
     /// @param viewport 目标窗口内的可见绘制区域
@@ -429,6 +449,8 @@ private:
     int m_selectionAnchor = -1;
     int m_selectionFocus = -1;
     bool m_selectingText = false;
+    bool m_textSelectionOcrAttempted = false;
+    std::optional<DeferredTextSelection> m_deferredTextSelection;
     bool m_moving = false;
     bool m_translationActive = false;
     bool m_translateAfterOcr = false;
