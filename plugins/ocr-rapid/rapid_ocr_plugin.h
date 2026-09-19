@@ -40,8 +40,6 @@ private:
     RapidDetModel m_detModel;
     RapidRecModel m_recModel;
     bool m_loaded = false;
-    bool m_loadFailed = false;
-    QString m_loadError;
 };
 
 }  // namespace markshot::ocr_rapid

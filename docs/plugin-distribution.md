@@ -119,3 +119,16 @@ build/mark-shot-ocr-rapid-plugin-test
 需要对应或更新的兼容运行时，以及 PP-OCR 模型。它移除了无用的内部依赖绑定；
 用户仍需安装 ONNX Runtime。修订资产使用独立文件名，市场索引同步更新下载地址、
 文件大小和 SHA-256，避免继续分发旧库。
+
+## Windows 插件更新与模型目录
+
+Windows 会锁定已经加载的 DLL。更新已有插件时，安装器校验下载文件后将新库保存到
+用户插件目录下的 `.pending-updates`，当前识别任务继续使用旧库。退出所有 Mark Shot
+进程并重新启动后，程序在加载插件前应用更新。如果其他进程仍占用 DLL，程序保留旧库
+和待更新文件，下次启动时重试。用户目录中的插件优先于安装包附带的插件。
+
+OCR 下载器和插件共用模型目录规则：Windows 默认使用
+`%LOCALAPPDATA%/mark-shot/models`，Linux 默认使用
+`${XDG_DATA_HOME:-~/.local/share}/mark-shot/models`。`MARK_SHOT_OCR_MODEL_DIR`
+同时覆盖下载和查找目录。旧版 `~/.local/share/mark-shot/models` 仍作为兼容搜索位置。
+下载完模型后，设置页会重新检查插件状态；模型缺失导致的识别失败不会永久阻止后续重试。

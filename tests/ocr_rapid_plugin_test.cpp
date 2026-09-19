@@ -5,6 +5,10 @@
 #include <QtTest/QtTest>
 
 #include <QFont>
+#include <QFontMetrics>
+#include <QDir>
+#include <QFile>
+#include <QScopeGuard>
 #include <QImage>
 #include <QPainter>
 #include <QPluginLoader>
@@ -67,6 +71,9 @@ private slots:
         m_plugin = qobject_cast<markshot::plugin::OcrProviderPlugin *>(instance);
         QVERIFY2(m_plugin, "OCR provider interface is missing");
         QCOMPARE(m_plugin->providerId(), QStringLiteral("rapid-onnx"));
+        if (qEnvironmentVariableIsSet("MARK_SHOT_TEST_REQUIRE_OCR_MODELS")) {
+            QVERIFY2(locateRapidModels().isComplete(), "Required OCR test models are missing");
+        }
     }
 
     /**
@@ -79,6 +86,48 @@ private slots:
         if (m_loader.isLoaded()) {
             QVERIFY2(m_loader.unload(), qPrintable(m_loader.errorString()));
         }
+    }
+
+    /**
+     * 【OCR】【模型补齐】模型缺失时识别失败，补齐后同一插件实例能够重新加载
+     * @return 无返回值
+     */
+    void recoversAfterModelsBecomeAvailable()
+    {
+        const auto models = locateRapidModels();
+        if (!models.isComplete()) {
+            QSKIP("PP-OCR models are not available on this machine");
+        }
+        const QByteArray oldDet = qgetenv("MARK_SHOT_RAPID_DET_MODEL");
+        const QByteArray oldRec = qgetenv("MARK_SHOT_RAPID_REC_MODEL");
+        const QByteArray oldDict = qgetenv("MARK_SHOT_RAPID_REC_DICT");
+        const auto restore = qScopeGuard([&] {
+            for (const auto &item : {qMakePair("MARK_SHOT_RAPID_DET_MODEL", oldDet),
+                                     qMakePair("MARK_SHOT_RAPID_REC_MODEL", oldRec),
+                                     qMakePair("MARK_SHOT_RAPID_REC_DICT", oldDict)}) {
+                if (item.second.isNull()) qunsetenv(item.first);
+                else qputenv(item.first, item.second);
+            }
+        });
+        QTemporaryDir downloaded;
+        QVERIFY(downloaded.isValid());
+        const QString det = downloaded.filePath(QStringLiteral("ch_PP-OCRv5_det_mobile.onnx"));
+        const QString rec = downloaded.filePath(QStringLiteral("ch_PP-OCRv5_rec_mobile.onnx"));
+        const QString dict = downloaded.filePath(QStringLiteral("ppocrv5_dict.txt"));
+        qputenv("MARK_SHOT_RAPID_DET_MODEL", det.toUtf8());
+        qputenv("MARK_SHOT_RAPID_REC_MODEL", rec.toUtf8());
+        qputenv("MARK_SHOT_RAPID_REC_DICT", dict.toUtf8());
+        QString error;
+        QVector<markshot::plugin::OcrToken> tokens;
+        QVERIFY(!m_plugin->isAvailable(&error));
+        QVERIFY(!m_plugin->recognize(renderTextImage(QStringLiteral("HELLO 123")), &tokens, &error));
+        QVERIFY(QFile::copy(models.detModel, det));
+        QVERIFY(QFile::copy(models.recModel, rec));
+        QVERIFY(QFile::copy(models.recDictionary, dict));
+        QVERIFY2(m_plugin->isAvailable(&error), qPrintable(error));
+        QVERIFY(error.isEmpty());
+        QVERIFY2(m_plugin->recognize(renderTextImage(QStringLiteral("HELLO 123")), &tokens, &error), qPrintable(error));
+        QVERIFY(!tokens.isEmpty());
     }
 
     /**
@@ -118,6 +167,9 @@ private slots:
     {
         if (!locateRapidModels().isComplete()) {
             QSKIP("PP-OCR models are not available on this machine");
+        }
+        if (!QFontMetrics(QGuiApplication::font()).inFontUcs4(0x4F60)) {
+            QSKIP("The test environment has no Chinese font");
         }
 
         QString error;

@@ -1,6 +1,7 @@
 #include "providers/provider_plugin_registry.h"
 
 #include "debug_log.h"
+#include "marketplace/plugin_updates.h"
 #include "markshot/code_scan_provider_plugin.h"
 #include "markshot/ocr_provider_plugin.h"
 #include "providers/provider_plugin_paths.h"
@@ -96,6 +97,21 @@ QVector<markshot::plugin::CodeScanProviderPlugin *> ProviderPluginRegistry::code
 QVector<ProviderPluginInfo> ProviderPluginRegistry::pluginInfos()
 {
     loadOnce();
+    // 1. 【插件】【可用状态】模型下载或配置变更后重新检查，不复用首次加载时的错误
+    for (ProviderPluginInfo &info : m_pluginInfos) {
+        QObject *instance = m_pluginInstances.value(info.path);
+        if (!instance || !info.matched) {
+            continue;
+        }
+        info.error.clear();
+        if (info.capability == ProviderPluginCapability::Ocr) {
+            info.available = qobject_cast<markshot::plugin::OcrProviderPlugin *>(instance)->isAvailable(&info.error);
+        } else if (info.capability == ProviderPluginCapability::Translation) {
+            info.available = qobject_cast<markshot::plugin::TranslateProviderPlugin *>(instance)->isAvailable(&info.error);
+        } else if (info.capability == ProviderPluginCapability::CodeScan) {
+            info.available = qobject_cast<markshot::plugin::CodeScanProviderPlugin *>(instance)->isAvailable(&info.error);
+        }
+    }
     return m_pluginInfos;
 }
 
@@ -105,6 +121,10 @@ void ProviderPluginRegistry::loadOnce()
         return;
     }
     m_loaded = true;
+
+    for (const QString &error : markshot::marketplace::applyPendingPluginUpdates(userPluginDirectory())) {
+        markshot::debugLog("providers", "【插件】【启动更新】%s", error.toUtf8().constData());
+    }
 
     for (const QString &dir : pluginSearchDirs()) {
         const QDir pluginDir(dir);
@@ -182,7 +202,9 @@ void ProviderPluginRegistry::loadOnce()
             }
 
             // 2. 与 provider 无关的插件立即卸载，避免占用内存
-            if (!matched) {
+            if (matched) {
+                m_pluginInstances.insert(entry.absoluteFilePath(), instance);
+            } else {
                 ProviderPluginInfo info = baseInfo;
                 info.loaded = true;
                 info.error = QStringLiteral("No supported provider interface");

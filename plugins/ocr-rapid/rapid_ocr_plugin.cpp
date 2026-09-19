@@ -76,6 +76,9 @@ QString RapidOcrPlugin::displayName() const
 
 bool RapidOcrPlugin::isAvailable(QString *error) const
 {
+    if (error) {
+        error->clear();
+    }
     const RapidModelPaths paths = locateRapidModels();
     if (paths.isComplete()) {
         return true;
@@ -92,19 +95,10 @@ bool RapidOcrPlugin::ensureLoaded(QString *error)
     if (m_loaded) {
         return true;
     }
-    if (m_loadFailed) {
-        if (error) {
-            *error = m_loadError;
-        }
-        return false;
-    }
-
     const RapidModelPaths paths = locateRapidModels();
     if (!paths.isComplete()) {
-        m_loadFailed = true;
-        m_loadError = QStringLiteral("PP-OCR models not found");
         if (error) {
-            *error = m_loadError;
+            *error = QStringLiteral("PP-OCR models not found");
         }
         return false;
     }
@@ -112,8 +106,6 @@ bool RapidOcrPlugin::ensureLoaded(QString *error)
     QString loadError;
     if (!m_detModel.load(paths.detModel, &loadError)
         || !m_recModel.load(paths.recModel, paths.recDictionary, &loadError)) {
-        m_loadFailed = true;
-        m_loadError = loadError;
         if (error) {
             *error = loadError;
         }

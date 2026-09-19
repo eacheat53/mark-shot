@@ -16,6 +16,8 @@ add_test(NAME translate-segments COMMAND mark-shot-translate-segments-test)
 
 qt_add_executable(mark-shot-ocr-provider-factory-test
     tests/ocr_provider_factory_test.cpp
+    src/marketplace/plugin_installer.cpp
+    src/marketplace/plugin_updates.cpp
     src/debug_log.cpp
     src/debug_log.h
     src/providers/ocr/ocr_plugin_task.cpp
@@ -61,6 +63,14 @@ target_link_libraries(mark-shot-rapid-ocr-word-segments-test
 )
 add_test(NAME rapid-ocr-word-segments COMMAND mark-shot-rapid-ocr-word-segments-test)
 
+qt_add_executable(mark-shot-rapid-model-paths-test
+    tests/rapid_model_paths_test.cpp
+    plugins/ocr-rapid/rapid_model_paths.cpp
+)
+target_include_directories(mark-shot-rapid-model-paths-test PRIVATE plugins/ocr-rapid plugin-sdk)
+target_link_libraries(mark-shot-rapid-model-paths-test PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME rapid-model-paths COMMAND mark-shot-rapid-model-paths-test -o -,txt)
+
 if(TARGET mark-shot-ocr-rapid)
     # 1. 【OCR】【插件测试】测试进程仅链接 Qt，避免预加载依赖掩盖动态库加载错误
     qt_add_executable(mark-shot-ocr-rapid-plugin-test
@@ -68,6 +78,7 @@ if(TARGET mark-shot-ocr-rapid)
         plugins/ocr-rapid/rapid_model_paths.cpp
         plugins/ocr-rapid/rapid_model_paths.h
         src/marketplace/plugin_installer.cpp
+        src/marketplace/plugin_updates.cpp
         src/providers/provider_plugin_paths.cpp
     )
     target_include_directories(mark-shot-ocr-rapid-plugin-test PRIVATE
@@ -108,7 +119,7 @@ if(TARGET mark-shot-ocr-rapid)
                 "$<TARGET_FILE_DIR:mark-shot-ocr-rapid-plugin-test>"
         )
     endif()
-    add_test(NAME ocr-rapid-plugin COMMAND mark-shot-ocr-rapid-plugin-test)
+    add_test(NAME ocr-rapid-plugin COMMAND mark-shot-ocr-rapid-plugin-test -o -,txt)
     set_tests_properties(ocr-rapid-plugin PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         add_test(NAME ocr-rapid-plugin-dependencies
