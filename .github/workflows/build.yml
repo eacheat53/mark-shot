@@ -30,6 +30,7 @@ jobs:
             ffmpeg \
             gcc \
             ninja \
+            onnxruntime-cpu \
             pkgconf \
             pipewire \
             qt6-base \

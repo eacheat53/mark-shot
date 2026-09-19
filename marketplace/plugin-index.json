@@ -1,11 +1,11 @@
 {
     "schemaVersion": 1,
-    "generatedAt": "2026-08-12T00:00:00Z",
+    "generatedAt": "2026-09-19T01:41:54Z",
     "plugins": [
         {
             "id": "mark-shot-ocr-rapid",
             "name": "PP-OCR (ONNX Runtime)",
-            "version": "0.1.47",
+            "version": "0.1.52",
             "vendor": "mark-shot",
             "description": "PP-OCR text recognition provider backed by ONNX Runtime. Runs OCR fully in-process without the Python helper.",
             "markShotMinVersion": "0.1.38",
@@ -22,20 +22,20 @@
                 {
                     "platform": "linux",
                     "architecture": "x86_64",
-                    "fileName": "mark-shot-plugin-ocr-rapid-v0.1.47-linux-x86_64.so",
+                    "fileName": "mark-shot-plugin-ocr-rapid-v0.1.52-linux-x86_64-r1.so",
                     "libraryFileName": "libmark-shot-ocr-rapid.so",
-                    "downloadUrl": "https://github.com/jswysnemc/mark-shot/releases/download/v0.1.47/mark-shot-plugin-ocr-rapid-v0.1.47-linux-x86_64.so",
-                    "sha256": "9c19485aa2b44ea5ff7cb5f5f42d79f9713dfd2b1d92225eeb8d0438f6868c22",
-                    "size": 151016
+                    "downloadUrl": "https://github.com/jswysnemc/mark-shot/releases/download/v0.1.52/mark-shot-plugin-ocr-rapid-v0.1.52-linux-x86_64-r1.so",
+                    "sha256": "59cd91ae44722b6aeb7b67f5d65d2c38f93d1a4e405a937a2cd1735ebd5b6eef",
+                    "size": 143104
                 },
                 {
                     "platform": "windows",
                     "architecture": "x86_64",
-                    "fileName": "mark-shot-plugin-ocr-rapid-v0.1.47-windows-x86_64.dll",
+                    "fileName": "mark-shot-plugin-ocr-rapid-v0.1.52-windows-x86_64.dll",
                     "libraryFileName": "mark-shot-ocr-rapid.dll",
-                    "downloadUrl": "https://github.com/jswysnemc/mark-shot/releases/download/v0.1.47/mark-shot-plugin-ocr-rapid-v0.1.47-windows-x86_64.dll",
-                    "sha256": "70f15884970df9f5362ef8e1965614da1dca0f455f88cb940d849d1fdcfc8ca2",
-                    "size": 220233
+                    "downloadUrl": "https://github.com/jswysnemc/mark-shot/releases/download/v0.1.52/mark-shot-plugin-ocr-rapid-v0.1.52-windows-x86_64.dll",
+                    "sha256": "d3cf400361500a9644db2108d0e481673f32225df79b5fd74f2b8a049c86e44e",
+                    "size": 166757
                 }
             ]
         },
