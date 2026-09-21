@@ -1,5 +1,16 @@
 # Release Notes
 
+### 0.1.53
+
+- **Staged Windows Plugin Updates**: Loaded DLLs remain locked safely; updates stage under `.pending-updates` and apply before plugin discovery upon restart. See the [plugin distribution guide](plugin-distribution.md).
+- **On-Demand Pinned Text Selection**: When `pinnedWindow.autoOcr` is disabled, dragging across text on a pinned sticker starts OCR on demand and preserves the initial selection rectangle until recognized text appears. See the [configuration guide](configuration.md).
+- **History Window Theme**: Aligns the screenshot history window with settings design tokens, adds a close button, and keeps action buttons visible on compact screens.
+- **HiDPI Capture Crosshair**: The crosshair cursor scales with the screen device pixel ratio, maintaining 256-byte hardware row alignment while remaining sharp on high-density displays.
+- **Dynamic Toolbar Cursor**: Cursors update immediately when hovering over dynamic toolbar widgets after layout changes.
+- **OCR Model Path & Retry Fixes**: Unifies OCR model paths across Windows and Linux, auto-refreshes availability after downloads, and allows retries when models are added.
+- **Marketplace Plugin Dependencies**: Cleans up direct Protobuf/Abseil links from the RapidOCR plugin, avoiding runtime load failures on newer systems.
+- **Windows Command Quoting**: Retains native argument quotes under cmd.exe so paths containing spaces execute reliably.
+
 ### 0.1.52
 
 - **OCR Result Window Redesign**: Recognized text and translation live in separate panes with per-pane copy and undo. **Translate** in the top bar reveals the translation pane, and the **Text / Source image** tabs share one content area that restores edits, undo history, and scroll positions. See the [user guide](user-guide.md).
