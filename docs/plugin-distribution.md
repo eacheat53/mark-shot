@@ -92,3 +92,43 @@ ctest --test-dir build --output-on-failure
 
 如果插件要进入 GitHub 插件市场，还需要把 Release 动态库资产写入市场索引。
 索引格式见 `docs/plugin-index-schema.md`，示例见 `examples/plugin-index.example.json`。
+
+## PP-OCR Linux 发布检查
+
+OCR 插件只使用 ONNX Runtime 的公开 API，不应直接链接 Protobuf、Abseil 或
+UTF-8 支持库。直接链接这些内部依赖会把构建环境的精确库版本写入插件，导致
+系统升级后出现 `libprotobuf.so.<旧版本>` 等加载错误。
+
+仓库测试通过市场安装器安装真实动态库，再使用 `QPluginLoader` 加载。没有模型时
+仍检查插件加载；模型齐全时继续验证中文和英文识别。Linux 还检查 ELF 直接依赖：
+
+```bash
+cmake --build build --target mark-shot-ocr-rapid-plugin-test --parallel
+QT_QPA_PLATFORM=offscreen ctest --test-dir build -R '^ocr-rapid-plugin' --output-on-failure --no-tests=error
+```
+
+发布资产应取自 `cmake --install` 的安装目录。下载发布资产后，可以直接验证安装和识别：
+
+```bash
+QT_QPA_PLATFORM=offscreen \
+MARK_SHOT_TEST_OCR_PLUGIN_PATH=/path/to/downloaded-plugin.so \
+build/mark-shot-ocr-rapid-plugin-test
+```
+
+`v0.1.52` 的 Linux `r1` 修订资产使用 Qt 6.11 和 ONNX Runtime 1.29 构建，
+需要对应或更新的兼容运行时，以及 PP-OCR 模型。它移除了无用的内部依赖绑定；
+用户仍需安装 ONNX Runtime。修订资产使用独立文件名，市场索引同步更新下载地址、
+文件大小和 SHA-256，避免继续分发旧库。
+
+## Windows 插件更新与模型目录
+
+Windows 会锁定已经加载的 DLL。更新已有插件时，安装器校验下载文件后将新库保存到
+用户插件目录下的 `.pending-updates`，当前识别任务继续使用旧库。退出所有 Mark Shot
+进程并重新启动后，程序在加载插件前应用更新。如果其他进程仍占用 DLL，程序保留旧库
+和待更新文件，下次启动时重试。用户目录中的插件优先于安装包附带的插件。
+
+OCR 下载器和插件共用模型目录规则：Windows 默认使用
+`%LOCALAPPDATA%/mark-shot/models`，Linux 默认使用
+`${XDG_DATA_HOME:-~/.local/share}/mark-shot/models`。`MARK_SHOT_OCR_MODEL_DIR`
+同时覆盖下载和查找目录。旧版 `~/.local/share/mark-shot/models` 仍作为兼容搜索位置。
+下载完模型后，设置页会重新检查插件状态；模型缺失导致的识别失败不会永久阻止后续重试。

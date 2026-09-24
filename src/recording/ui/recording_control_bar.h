@@ -57,6 +57,7 @@ private:
 
     QLabel *m_indicator = nullptr;
     QLabel *m_elapsed = nullptr;
+    QLabel *m_state = nullptr;
     QToolButton *m_pause = nullptr;
     QToolButton *m_stop = nullptr;
     bool m_paused = false;

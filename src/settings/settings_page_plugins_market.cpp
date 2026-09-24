@@ -4,6 +4,7 @@
 #include "marketplace/plugin_asset_downloader.h"
 #include "marketplace/plugin_installer.h"
 #include "marketplace/plugin_marketplace_client.h"
+#include "markshot/ocr_model_directory.h"
 #include "settings/settings_page_plugins_model.h"
 #include "settings/settings_ui_helpers.h"
 #include "ui/i18n.h"
@@ -98,15 +99,7 @@ constexpr int kOcrModelAssetCount = static_cast<int>(sizeof(kOcrModelAssets) / s
  */
 QString ocrModelsDirectory()
 {
-    const QString envDir = qEnvironmentVariable("MARK_SHOT_OCR_MODEL_DIR").trimmed();
-    if (!envDir.isEmpty()) {
-        return envDir;
-    }
-    QString base = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    if (base.isEmpty()) {
-        base = QDir::home().filePath(QStringLiteral(".local/share"));
-    }
-    return QDir(base).filePath(QStringLiteral("mark-shot/models"));
+    return markshot::plugin::ocrModelDirectory();
 }
 
 /**
@@ -313,7 +306,9 @@ void SettingsPagePlugins::installMarketplaceAsset(
                 m_pendingInstallTempPath.clear();
                 m_marketplaceInstallRunning = false;
                 if (result.success) {
-                    setMarketplaceStatus(MS_TR("%1 installed. Restart Mark Shot to load it.")
+                    setMarketplaceStatus((result.pendingRestart
+                        ? MS_TR("%1 update downloaded. Quit all Mark Shot instances and restart to apply it.")
+                        : MS_TR("%1 installed. Restart Mark Shot to load it."))
                                              .arg(entry.name),
                                          QStringLiteral("success"));
                     refreshDiagnostics();

@@ -11,12 +11,10 @@ OcrResultWindowPlacement ocrResultWindowPlacement(const QRect &targetAvailableGe
             && !targetAvailableGeometry.isEmpty()
         ? targetAvailableGeometry
         : fallbackAvailableGeometry;
-    QSize size(420, 520);
+    QSize size(640, 520);
     if (availableGeometry.isValid() && !availableGeometry.isEmpty()) {
-        size.setWidth(std::min(size.width(),
-                               std::max(320, qRound(availableGeometry.width() * 0.9))));
-        size.setHeight(std::min(size.height(),
-                                std::max(260, qRound(availableGeometry.height() * 0.9))));
+        size.setWidth(std::min(size.width(), std::max(1, qRound(availableGeometry.width() * 0.9))));
+        size.setHeight(std::min(size.height(), std::max(1, qRound(availableGeometry.height() * 0.9))));
     }
 
     QPoint topLeft;

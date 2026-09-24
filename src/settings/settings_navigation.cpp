@@ -2,8 +2,11 @@
 
 #include "settings/settings_design_tokens.h"
 #include "ui/i18n.h"
+#include "ui/theme.h"
 
 #include <QIcon>
+#include <QComboBox>
+#include <QSignalBlocker>
 #include <QLabel>
 #include <QListWidgetItem>
 #include <QPainter>
@@ -262,30 +265,38 @@ SettingsNavigation::SettingsNavigation(QWidget *parent)
     setObjectName(QStringLiteral("settingsSidebar"));
     setFixedWidth(tokens::kSidebarWidth);
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(16, 18, 16, 16);
+    layout->setContentsMargins(10, 16, 10, 12);
     layout->setSpacing(12);
 
     buildHeader();
     buildList();
+    m_compactSelector = new QComboBox(this);
+    m_compactSelector->setObjectName(QStringLiteral("settingsCategorySelector"));
+    m_compactSelector->setAccessibleName(MS_TR("Settings category"));
+    for (int row : m_logicalRows) {
+        m_compactSelector->addItem(m_list->item(row)->icon(), m_list->item(row)->text());
+    }
+    layout->addWidget(m_compactSelector);
+    m_compactSelector->hide();
+    connect(m_compactSelector, &QComboBox::currentIndexChanged,
+            this, &SettingsNavigation::setCurrentLogicalRow);
 }
 
 void SettingsNavigation::buildHeader()
 {
-    auto *title = new QLabel(QStringLiteral("Mark Shot"), this);
-    title->setObjectName(QStringLiteral("settingsHeroTitle"));
-    layout()->addWidget(title);
-    auto *subtitle = new QLabel(MS_TR("Settings Center"), this);
-    subtitle->setObjectName(QStringLiteral("settingsHeroText"));
-    subtitle->setWordWrap(true);
-    layout()->addWidget(subtitle);
+    m_header = new QLabel(MS_TR("Settings"), this);
+    m_header->setObjectName(QStringLiteral("settingsHeroTitle"));
+    m_header->setFont(markshot::theme::uiFont(11, QFont::DemiBold));
+    layout()->addWidget(m_header);
 }
 
 void SettingsNavigation::buildList()
 {
     m_list = new QListWidget(this);
+    m_list->setProperty("actionList", true);
     m_list->setObjectName(QStringLiteral("settingsNavigation"));
     m_list->setFrameShape(QFrame::NoFrame);
-    m_list->setFocusPolicy(Qt::NoFocus);
+    m_list->setFocusPolicy(Qt::StrongFocus);
     m_list->setSpacing(tokens::kNavItemGap);
     m_list->setUniformItemSizes(false);
     m_list->setIconSize(QSize(tokens::kNavIconSize, tokens::kNavIconSize));
@@ -314,7 +325,18 @@ void SettingsNavigation::buildList()
     connect(m_list, &QListWidget::currentRowChanged, this, [this](int row) {
         const int logical = m_logicalRows.indexOf(row);
         if (logical >= 0) {
+            if (m_compactSelector) {
+                const QSignalBlocker blocker(m_compactSelector);
+                m_compactSelector->setCurrentIndex(logical);
+            }
             emit navigationChanged(logical);
+        }
+    });
+    // 1. 【设置】【无障碍导航】辅助技术可能只改变选中项，保持内容页与选中项一致
+    connect(m_list, &QListWidget::itemSelectionChanged, this, [this] {
+        const auto selected = m_list->selectedItems();
+        if (!selected.isEmpty() && selected.first() != m_list->currentItem()) {
+            m_list->setCurrentItem(selected.first());
         }
     });
 }
@@ -343,6 +365,16 @@ void SettingsNavigation::setCurrentLogicalRow(int index)
         return;
     }
     m_list->setCurrentRow(m_logicalRows[index]);
+}
+
+void SettingsNavigation::setCompact(bool compact)
+{
+    m_header->setVisible(!compact);
+    m_list->setVisible(!compact);
+    m_compactSelector->setVisible(compact);
+    setMinimumWidth(compact ? 0 : tokens::kSidebarWidth);
+    setMaximumWidth(compact ? QWIDGETSIZE_MAX : tokens::kSidebarWidth);
+    setMaximumHeight(compact ? 64 : QWIDGETSIZE_MAX);
 }
 
 }  // namespace markshot::settings

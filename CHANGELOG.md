@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.1.53 - 2026-09-21
+
+### Features & Enhancements
+
+- **Staged Windows Plugin Updates**: Plugin updates on Windows stage under `.pending-updates` so loaded DLLs remain locked without triggering file-overwrite errors, and verified updates apply before plugin discovery on restart. User plugins take priority over application-bundled plugins. See [docs/plugin-distribution.md](docs/plugin-distribution.md).
+- **On-Demand Pinned Text Selection**: When automatic OCR on pinned stickers (`pinnedWindow.autoOcr`) is disabled, the first text-selection gesture triggers OCR on demand while preserving the gesture rectangle until recognition completes, and preserves blank-area window dragging. See [docs/configuration.md](docs/configuration.md).
+- **Screenshot History Window Theme**: The screenshot history window aligns with settings design tokens and theme, adds an explicit close button, and preserves action button readability in compact window sizes.
+- **HiDPI Capture Crosshair Scaling**: The capture crosshair cursor scales by integer factors based on device pixel ratio, keeping rendering crisp on HiDPI displays while retaining 256-byte row stride hardware buffer alignment.
+- **Dynamic Toolbar Cursor Refresh**: Dynamic toolbar interactions asynchronously refresh the cursor to match underlying child widgets immediately after layout updates.
+
+### Bug Fixes
+
+- **OCR Model Path Alignment & Recovery**: RapidOCR model lookup rules now align with the model downloader across Windows (`%LOCALAPPDATA%/mark-shot/models`) and Linux (`~/.local/share/mark-shot/models` or `XDG_DATA_HOME`), refresh plugin availability automatically after downloads complete, and allow subsequent recognition retries after missing-model errors.
+- **Marketplace Plugin Runtime Dependencies**: Removed unused direct Protobuf and Abseil dependencies from the RapidOCR plugin to prevent dynamic linking failures after system library updates, accompanied by explicit ELF dependency checks.
+- **Windows Shell Command Quoting**: Preserved native argument quoting when launching external commands via cmd.exe, preventing paths with spaces or special characters from being incorrectly escaped under `CommandLineToArgvW` rules.
+- **Windows Test Environment Compatibility**: Linked matching ONNX Runtime libraries and aligned test subsystem entry points with Qt `qmain` on Windows, and dynamically calculated settings form layout test viewports based on font metrics for runners lacking desktop fonts.
+
+## 0.1.52 - 2026-09-13
+
+### Features & Enhancements
+
+- **OCR Result Window Redesign**: The OCR result window now separates the editable recognized text and the translation into dedicated panes with per-pane copy and undo actions plus copy feedback on the buttons. **Translate** in the top bar reveals the translation pane and its language controls, and the **Text / Source image** tabs share one content area that restores edits, undo history, scroll positions, and pane sizes. Wide windows show both panes side by side, narrow windows stack them, and compact windows keep their content. See [docs/user-guide.md](docs/user-guide.md).
+- **Streamlined Recording Dialog**: The recording dialog keeps Video/GIF mode selection, display or region capture, and audio input in a compact layout. **Save to** and **Recording options** expand on demand, switching between Video and GIF retains each mode's frame rate and the selected audio input, and the window grows to fit expanded content while staying scrollable with visible bottom actions on small screens.
+- **Settings Form Layout**: Settings labels and fields align across groups, numeric and shortcut fields use compact widths, and switch captions sit next to their checkboxes. Narrow windows replace the sidebar with a category selector and place labels above fields, with long labels wrapping to fit. **Save** applies without closing, **Undo changes** restores the most recently saved values, and pressing `Enter` in a single-line field saves while keeping the window open.
+- **Interaction Cursor States**: Annotation editing now covers the complete cursor state machine. Hovering, moving, and resizing annotations show the matching cursor, and adjusting annotation width shows a live size preview beside the width cursor. See [docs/interaction-cursors.md](docs/interaction-cursors.md).
+
+### Bug Fixes
+
+- **KDE Pinned Windows**: The always-on-top KWin script now scopes to Mark Shot's own windows so pinned state no longer leaks between stickers, and resizing is handed to the window manager through native resize requests that preserve the image aspect ratio and resize anchors. See [docs/kde-pinned-windows.md](docs/kde-pinned-windows.md).
+- **Hyprland Pinned Image Dragging**: Dragging a pinned layer-shell image on Hyprland now follows the pointer with a live drag preview and rebinds to the target output, so images no longer jump or disappear while being moved. See [docs/hyprland-pinned-windows.md](docs/hyprland-pinned-windows.md).
+- **Compact OCR Windows**: Resizing an OCR result window to compact dimensions no longer drops its text, translation, or scroll state.
+
 ## 0.1.51 - 2026-09-06
 
 ### Features & Enhancements

@@ -244,6 +244,8 @@ private:
             return LayerShellQt::Window::KeyboardInteractivityExclusive;
         case markshot::layershell::KeyboardInteractivity::OnDemand:
             return LayerShellQt::Window::KeyboardInteractivityOnDemand;
+        case markshot::layershell::KeyboardInteractivity::None:
+            return LayerShellQt::Window::KeyboardInteractivityNone;
         }
         return LayerShellQt::Window::KeyboardInteractivityExclusive;
     }

@@ -4,7 +4,6 @@
 #include "providers/provider_plugin_registry.h"
 #include "ui/i18n.h"
 
-#include <QComboBox>
 #include <QFileInfo>
 #include <QSet>
 
@@ -139,43 +138,6 @@ QStringList pluginSearchDirectoryRows()
 QString userPluginDirectory()
 {
     return markshot::providers::userPluginDirectory();
-}
-
-void populateProviderCombo(QComboBox *combo, markshot::providers::ProviderPluginCapability capability)
-{
-    if (!combo) {
-        return;
-    }
-    combo->clear();
-    const QVector<ProviderOption> options = providerOptionsForCapability(capability);
-    for (const ProviderOption &option : options) {
-        combo->addItem(option.label, option.value);
-    }
-}
-
-void setProviderComboValue(QComboBox *combo, const QString &value)
-{
-    if (!combo) {
-        return;
-    }
-    const QString normalized = value.trimmed().isEmpty()
-        ? QStringLiteral("auto")
-        : value.trimmed().toLower();
-    int index = combo->findData(normalized);
-    if (index < 0) {
-        combo->addItem(QStringLiteral("%1: %2").arg(MS_TR("Custom"), normalized), normalized);
-        index = combo->count() - 1;
-    }
-    combo->setCurrentIndex(index);
-}
-
-QString providerComboValue(const QComboBox *combo)
-{
-    if (!combo || combo->currentIndex() < 0) {
-        return QStringLiteral("auto");
-    }
-    const QString value = combo->currentData().toString().trimmed().toLower();
-    return value.isEmpty() ? QStringLiteral("auto") : value;
 }
 
 }  // namespace markshot::settings

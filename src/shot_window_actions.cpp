@@ -1,8 +1,12 @@
 #include "shot_window_module.h"
 
+#include <QScopedValueRollback>
+#include <QScopeGuard>
+
 #include "notifications/app_notifications.h"
 
 #include "app_config_store.h"
+#include "capture_history/history_store.h"
 #include "export_image_effect.h"
 #include "providers/ocr/ocr_provider_factory.h"
 #include "providers/provider_task.h"
@@ -58,9 +62,10 @@ void ShotWindow::runExtensionCommand(const ExtensionCommand &command)
         QApplication::processEvents();
     }
 
-    const bool started = QProcess::startDetached(markshot::commandShellProgram(),
-                                                 markshot::commandShellArguments(commandLine),
-                                                 workingDirectory);
+    QProcess process;
+    markshot::setShellCommand(&process, commandLine);
+    process.setWorkingDirectory(workingDirectory);
+    const bool started = process.startDetached();
     if (started && command.closeOnStart) {
         close();
         return;
@@ -149,6 +154,7 @@ void ShotWindow::pinSelection()
         ? std::nullopt
         : std::optional<QPoint>(logicalSelection.topLeft());
     auto *window = createPinnedImageWindow(output, pinnedTopLeft);
+    markshot::history::rememberScreenshot(output);
     window->show();
     window->raise();
     window->activateWindow();
@@ -176,7 +182,10 @@ void ShotWindow::ocrCopySelection()
         return;
     }
 
-    QApplication::setOverrideCursor(Qt::WaitCursor);
+    // 【截图】【识别光标】先恢复任务状态再刷新指针，提前返回和嵌套调用都按作用域清理
+    const auto restoreCursor = qScopeGuard([this] { updateCursor(); });
+    const QScopedValueRollback<bool> busy(m_operationBusy, true);
+    updateCursor();
 
     // 1. 组装 OCR 请求，provider 优先链由工厂解析
     markshot::providers::OcrTaskRequest request;
@@ -201,8 +210,13 @@ void ShotWindow::ocrCopySelection()
     const markshot::providers::TaskResult taskResult = task->waitForResult();
     task->deleteLater();
 
+    // 3. 【OCR】【原图预览】在删除临时文件前保留实际识别图片
+    const bool showResultPanel = ocrResultPanelEnabled();
+    QImage sourceImage;
+    if (taskResult.ok && showResultPanel) {
+        sourceImage.load(tempPath);
+    }
     QFile::remove(tempPath);
-    QApplication::restoreOverrideCursor();
 
     if (taskResult.error == markshot::providers::TaskError::StartFailed) {
         showToast(config.ocrCommand.isEmpty()
@@ -244,8 +258,8 @@ void ShotWindow::ocrCopySelection()
 
     const QString result = markshot::ocr::tokensText(parsedOcr.tokens);
 
-    if (ocrResultPanelEnabled()) {
-        auto *window = createOcrResultWindow(result, targetScreen.data());
+    if (showResultPanel) {
+        auto *window = createOcrResultWindow(result, targetScreen.data(), std::move(sourceImage));
         window->show();
         window->raise();
         window->activateWindow();
@@ -342,6 +356,7 @@ void ShotWindow::saveSelection()
 
     const QString path = defaultSavePath();
     if (markshot::ensureSavePathDirectory(path) && output.save(path, "PNG")) {
+        markshot::history::rememberScreenshot(output);
         const QString message = MS_TR("Saved to %1").arg(path);
         // Keyboard save should finish without another dialog round-trip.
         if (!markshot::notifications::notifyScreenshotSaved(path)) {
@@ -404,6 +419,7 @@ void ShotWindow::saveSelectionAs()
         if (!files.isEmpty()
             && markshot::ensureSavePathDirectory(files.first())
             && output.save(files.first(), "PNG")) {
+            markshot::history::rememberScreenshot(output);
             const QString message = MS_TR("Saved to %1").arg(files.first());
             // Prefer desktop notifications because the window may close immediately after saving.
             if (!markshot::notifications::notifyScreenshotSaved(files.first())) {
@@ -442,7 +458,11 @@ void ShotWindow::copySelection()
         return;
     }
 
-    markshot::copyImageToClipboard(output);
+    if (!markshot::copyImageToClipboard(output)) {
+        showToast(MS_TR("Copy failed"));
+        return;
+    }
+    markshot::history::rememberScreenshot(output);
 
     close();
 }

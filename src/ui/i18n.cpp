@@ -1,4 +1,5 @@
 #include "ui/i18n.h"
+#include "ui/i18n_task_windows.h"
 
 #include "app_config_store.h"
 #include "ui/interface_language_config.h"
@@ -227,9 +228,6 @@ const QHash<QString, QString> &chineseTable()
         {QStringLiteral("Failed to save pinned window setting."), QStringLiteral("保存置顶图片设置失败。")},
         {QStringLiteral("Failed to save pinned text selection setting."), QStringLiteral("保存置顶图片拖选设置失败。")},
         {QStringLiteral("OCR Result"), QStringLiteral("OCR 结果")},
-        {QStringLiteral("Review or edit the recognized text before copying."),
-         QStringLiteral("复制前可先检查或编辑识别结果。")},
-        {QStringLiteral("OCR text appears here"), QStringLiteral("OCR 文字会显示在这里")},
         {QStringLiteral("No text to translate"), QStringLiteral("没有可翻译的文字")},
         {QStringLiteral("Translation failed"), QStringLiteral("翻译失败")},
         {QStringLiteral("Translation failed: %1"), QStringLiteral("翻译失败：%1")},
@@ -637,6 +635,20 @@ const QHash<QString, QString> &chineseTable()
         {QStringLiteral("Failed to write GNOME custom keybindings."),
          QStringLiteral("写入 GNOME 自定义快捷键失败。")},
         {QStringLiteral("No selection history"), QStringLiteral("没有选区历史")},
+        {QStringLiteral("Screenshot History"), QStringLiteral("截图历史")},
+        {QStringLiteral("Clear History"), QStringLiteral("清空历史")},
+        {QStringLiteral("Keep screenshot history"), QStringLiteral("自动保留截图历史")},
+        {QStringLiteral("No screenshots in history"), QStringLiteral("没有历史截图")},
+        {QStringLiteral("Screenshot is no longer available"), QStringLiteral("截图已不可用")},
+        {QStringLiteral("Copied"), QStringLiteral("已复制")},
+        {QStringLiteral("Screenshot removed"), QStringLiteral("已删除截图")},
+        {QStringLiteral("History operation failed: %1"), QStringLiteral("历史操作失败：%1")},
+        {QStringLiteral("Delete all screenshot history? Saved files will be kept."),
+         QStringLiteral("删除全部截图历史？已另存的文件将保留。")},
+        {QStringLiteral("History cleared"), QStringLiteral("已清空历史")},
+        {QStringLiteral("Screenshot history enabled"), QStringLiteral("已开启截图历史")},
+        {QStringLiteral("Screenshot history disabled"), QStringLiteral("已关闭截图历史")},
+        {QStringLiteral("Failed to save settings"), QStringLiteral("保存设置失败")},
         {QStringLiteral("Failed to create global shortcut session: %1"),
          QStringLiteral("创建全局快捷键会话失败：%1")},
         {QStringLiteral("Global shortcuts portal returned an invalid session."),
@@ -675,6 +687,10 @@ Language language()
 QString translate(const QString &source)
 {
     if (g_language == Language::Chinese) {
+        const auto taskText = taskWindowChineseTable().constFind(source);
+        if (taskText != taskWindowChineseTable().constEnd()) {
+            return taskText.value();
+        }
         const auto it = chineseTable().constFind(source);
         if (it != chineseTable().constEnd()) {
             return it.value();

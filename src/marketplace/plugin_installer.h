@@ -15,6 +15,7 @@ struct PluginInstallResult {
     bool success = false;
     QString installedPath;
     QString error;
+    bool pendingRestart = false;
 };
 
 /**

@@ -166,6 +166,12 @@ pixel (Shift+arrow by ten). On Wayland, if the compositor cannot warp the
 system cursor, a software crosshair is drawn at the logical point and clicks
 follow that point. The mouse wheel resizes the loupe.
 
+After selecting a region, use the Move tool to adjust it. Dragging its edges,
+corners, or interior also shows the enabled loupe. Arrow keys adjust the hovered
+edge or corner by one image pixel; away from a handle they move the whole region.
+Hold Shift for ten pixels. Arrow keys also work during a drag and remain available
+when the loupe is disabled.
+
 ---
 
 ## 4. Annotation Tools
@@ -231,7 +237,7 @@ clicking a text annotation still opens the inline editor.
 
 ### 4.3 Export frame
 
-Enable **Settings → Export → Mac-style frame** to add transparent padding,
+Enable **Settings → Storage → Screenshot Export Appearance → Mac-style Frame** to add transparent padding,
 rounded corners, and a soft shadow to saved / copied / uploaded images.
 
 ---
@@ -254,6 +260,33 @@ provider selection and credentials.
 On KDE Plasma Wayland, `pinnedWindow.alwaysOnTop` is applied through a session
 KWin script so the sticker stays above other windows. The window remains a
 normal xdg-toplevel, so dragging and resizing are unchanged.
+
+The OCR result window opens with the editable recognized text. The **Text / Source image**
+tabs share one content area. The image scales to fit the window; returning to text
+restores edits, undo history, scroll positions, and pane sizes. **Translate** in the
+top bar reveals the translation pane, with language and translation controls above
+the editors, then starts a translation with the saved language. Each pane has its own copy action and
+shows an undo action after editing. Copy feedback appears on the corresponding
+button. Wide windows show both panes side by side; narrow windows stack them.
+Drag the divider to adjust their space, or use the bottom-right grip to resize
+the window.
+
+A running translation can be canceled. **Hide translation** also cancels any
+pending request and retains the existing result. Editing the source or changing
+the target language marks the existing translation as out of date. `Ctrl+Enter` translates,
+`Ctrl+Shift+C` copies the full text of the focused editor, `Ctrl+C` copies the
+selection, and `Esc` closes the window. The window follows the configured light
+or dark interface theme.
+
+The separate OCR result window opens as a regular window by default, so niri can
+identify it with `niri msg pick-window` and apply window rules. Drag its title bar
+or use your window manager's move controls. Its pin button saves the independent
+`ocrResultWindow.alwaysOnTop` setting. On compositors that use layer-shell for
+always-on-top windows, enabling the pin makes the OCR window a layer surface;
+turn it off to restore normal window management.
+When entering layer-shell mode from a regular Wayland window, the OCR panel is
+centered on its current screen because Wayland does not expose the managed
+window's global position. Its title bar remains draggable in that mode.
 
 ---
 
@@ -302,7 +335,7 @@ See the README for the full argument table.
 ## 8. Desktop Hotkeys & Tray
 
 Tray mode (`mark-shot --tray`) registers `Ctrl+Alt+S` for region capture and
-provides capture / recording / settings / quit menu entries. Desktop hotkeys:
+provides capture / screenshot history / recording / settings / quit menu entries. Desktop hotkeys:
 
 - **GNOME**: Settings → Keyboard → Shortcuts → Custom Shortcuts → bind to `mark-shot`.
 - **KDE**: custom shortcut bound to `mark-shot` (plus the KWin ScreenShot2
@@ -311,9 +344,57 @@ provides capture / recording / settings / quit menu entries. Desktop hotkeys:
 - **niri**: `binds { Mod+Shift+S { spawn "mark-shot"; } }`.
 - **Sway / i3**: `bindsym Mod4+Shift+S exec mark-shot`.
 
+### 8.1 Screenshot history
+
+Open **Screenshot History** from the tray menu, run `mark-shot --history`, or
+press `Ctrl+H` in the capture overlay. Opening history from the overlay ends the
+current capture. History stores the image contents from successful Copy, Save,
+Save As, and Pin actions in the capture editor, including annotations and export
+effects. It is separate from selection-rectangle history.
+
+Select a thumbnail to preview it, then copy, edit, pin, save, or delete it.
+**Clear History** asks for confirmation and only removes the stored history
+copies; separately saved files remain. Copying, pinning, or saving directly from
+history does not create another entry. Editing and exporting it creates a new
+entry with the updated image.
+
+Automatic recording is enabled by default and can be turned off in the history
+window. The latest 50 screenshots are retained, with a total size limit of
+256 MiB; the oldest entries are removed as needed. `captureHistory.limit` sets
+the count from 1 to 200. Images persist across restarts in the application's
+`capture-history` data directory (`~/.local/share/mark-shot/capture-history` on
+Linux with the default XDG paths). Upload-only, OCR-only, display-picker, and
+headless captures do not add entries.
+
+### 8.2 Recording
+
+Open the recording dialog from the tray menu or a configured recording shortcut.
+Choose Video or GIF beside the title, then select a display or region. The main
+action reads **Select region** when a selection is needed and **Start recording**
+for an entire display. In Video mode, enable **Record audio** to choose an input.
+
+**Save to** shows the output file name; expand it to change the path. **Recording
+options** shows the current frame rate, format, and video quality; expand it for
+the detailed options, countdown, and capture backend. The window adjusts its height
+to fit expanded content. When screen space is limited, the options remain scrollable
+and the bottom actions stay visible. Switching between Video
+and GIF retains each mode's frame rate and the selected audio input. GIF hides
+audio and video-only controls. During recording, the compact control bar shows
+elapsed time and recording or paused status, with pause/resume and **Stop** actions.
+
 ---
 
 ## 9. Configuration & Backends
+
+Open **Settings** from the tray menu. Labels and fields align across groups; numeric
+and shortcut fields use compact widths, and switch captions sit next to their
+checkboxes. Narrow windows replace the sidebar with a category selector and place
+labels above fields. Long labels and switch captions wrap to fit. Advanced groups expand in place and retain their input when
+collapsed. **Save** applies changes without closing the window and reports the
+result in the footer. **Undo changes** restores the most recently saved values
+while keeping the current page open. Pressing `Enter` in a single-line text field saves
+changes and keeps the window open. Returning an option to its saved value clears
+the unsaved state.
 
 - Config file: `~/.config/mark-shot/config.json` (Linux), created on first run.
 - Full reference: [Configuration](configuration.md).

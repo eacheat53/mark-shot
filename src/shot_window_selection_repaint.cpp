@@ -113,5 +113,5 @@ void ShotWindow::detachSelectionPointerIfWarpFailed(QPoint widgetPoint)
 
     m_selectionPointerDetached = true;
     m_selectionPointerHardwareAnchor = mapFromGlobal(QCursor::pos());
-    setCursor(Qt::BlankCursor);
+    updateCursor();
 }

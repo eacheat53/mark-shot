@@ -3,6 +3,9 @@
 #include "providers/code_scan/code_scan_provider_factory.h"
 #include "providers/provider_task.h"
 
+#include <QScopedValueRollback>
+#include <QScopeGuard>
+
 using namespace markshot::shot;
 
 /**
@@ -22,7 +25,10 @@ void ShotWindow::scanCodeSelection()
     }
 
     const CodeScanConfig config = codeScanConfig();
-    QApplication::setOverrideCursor(Qt::WaitCursor);
+    // 【截图】【扫码光标】先恢复任务状态再刷新指针，提前返回和嵌套调用都按作用域清理
+    const auto restoreCursor = qScopeGuard([this] { updateCursor(); });
+    const QScopedValueRollback<bool> busy(m_operationBusy, true);
+    updateCursor();
 
     // 1. 组装扫码请求，provider 优先链由工厂解析
     markshot::providers::CodeScanTaskRequest request;
@@ -47,7 +53,6 @@ void ShotWindow::scanCodeSelection()
     task->deleteLater();
 
     QFile::remove(tempPath);
-    QApplication::restoreOverrideCursor();
 
     if (result.error == markshot::providers::TaskError::StartFailed) {
         showToast(config.command.isEmpty()

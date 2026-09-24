@@ -1,5 +1,7 @@
 #include "selection_loupe.h"
 
+#include "capture_cross_cursor.h"
+
 #include <QColor>
 #include <QFont>
 #include <QFontMetrics>
@@ -40,7 +42,8 @@ SelectionLoupeLayout selectionLoupeLayout(QPointF widgetPoint,
                                           QSize viewport,
                                           qreal loupeSize,
                                           QPointF imagePoint,
-                                          QSize imageSize)
+                                          QSize imageSize,
+                                          const QVector<QRect> &obstacles)
 {
     SelectionLoupeLayout layout;
     const qreal size = std::max(48.0, loupeSize);
@@ -56,6 +59,34 @@ SelectionLoupeLayout selectionLoupeLayout(QPointF widgetPoint,
     }
     layout.loupe = clampLoupeRect(loupe, viewport);
 
+    // 1. 【截图】【选区放大镜】在指针四周选择遮挡最少的位置，避开编辑工具栏
+    const auto overlapArea = [&obstacles](QRectF candidate) {
+        qreal area = 0.0;
+        for (const QRect &obstacle : obstacles) {
+            const QRectF overlap = candidate.adjusted(-8.0, -8.0, 8.0, 8.0).intersected(obstacle);
+            if (!overlap.isEmpty()) {
+                area += overlap.width() * overlap.height();
+            }
+        }
+        return area;
+    };
+    qreal bestOverlap = overlapArea(layout.loupe);
+    for (const QPointF offset : {QPointF(kLoupeOffset, kLoupeOffset),
+                                 QPointF(-kLoupeOffset - size, kLoupeOffset),
+                                 QPointF(kLoupeOffset, -kLoupeOffset - size),
+                                 QPointF(-kLoupeOffset - size, -kLoupeOffset - size)}) {
+        if (bestOverlap == 0.0) {
+            break;
+        }
+        const QRectF candidate = clampLoupeRect(QRectF(widgetPoint + offset, QSizeF(size, size)), viewport);
+        const qreal overlap = overlapArea(candidate);
+        if (overlap < bestOverlap) {
+            layout.loupe = candidate;
+            bestOverlap = overlap;
+        }
+    }
+
+    // 2. 【截图】【选区放大镜】显示位置变化不影响指针附近的原图像素取样
     const QPoint center(qRound(imagePoint.x()), qRound(imagePoint.y()));
     const QRect candidate(center.x() - kSampleRadius,
                           center.y() - kSampleRadius,
@@ -124,25 +155,12 @@ void drawSelectionLoupe(QPainter &painter,
 
 void drawSelectionPointer(QPainter &painter, QPointF widgetPoint)
 {
-    const QPoint center = widgetPoint.toPoint();
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(QPen(QColor(15, 23, 42, 235), 5, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center.x(), center.y() - 16, center.x(), center.y() + 16);
-    painter.drawLine(center.x() - 16, center.y(), center.x() + 16, center.y());
-    painter.setPen(QPen(QColor(255, 255, 255, 245), 3, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center.x(), center.y() - 16, center.x(), center.y() + 16);
-    painter.drawLine(center.x() - 16, center.y(), center.x() + 16, center.y());
-    painter.setPen(QPen(QColor(45, 212, 191, 255), 1, Qt::SolidLine, Qt::SquareCap));
-    painter.drawLine(center.x(), center.y() - 16, center.x(), center.y() + 16);
-    painter.drawLine(center.x() - 16, center.y(), center.x() + 16, center.y());
-    painter.restore();
+    drawCaptureCrossCursor(painter, widgetPoint);
 }
 
 QRect selectionPointerDirtyRect(QPointF widgetPoint)
 {
-    const QPoint center = widgetPoint.toPoint();
-    return QRect(center.x() - 20, center.y() - 20, 41, 41);
+    return captureCrossCursorRect(widgetPoint);
 }
 
 }  // namespace markshot::shot

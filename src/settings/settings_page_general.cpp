@@ -19,7 +19,7 @@ SettingsPageGeneral::SettingsPageGeneral(QWidget *parent)
 {
     auto *layout = createSettingsPageLayout(this);
 
-    QFrame *startupCard = createSettingsCard(MS_TR("General"),
+    QFrame *startupCard = createSettingsCard(MS_TR("Appearance"),
                                              MS_TR("Configure interface language, theme, tray startup, and global shortcuts."),
                                              this);
     QFormLayout *startupForm = settingsCardForm(startupCard);
@@ -37,6 +37,10 @@ SettingsPageGeneral::SettingsPageGeneral(QWidget *parent)
                        QVariant::fromValue(static_cast<int>(markshot::ui::UiThemeMode::Dark)));
     m_uiTheme->addItem(MS_TR("Light"),
                        QVariant::fromValue(static_cast<int>(markshot::ui::UiThemeMode::Light)));
+    layout->addWidget(startupCard);
+
+    QFrame *startupOptions = createSettingsCard(MS_TR("Startup"), {}, this);
+    startupForm = settingsCardForm(startupOptions);
     m_trayEnabled = addSwitchRow(startupForm,
                                  MS_TR("Start in Tray"),
                                  MS_TR("Launch Mark Shot directly into the system tray."));
@@ -46,9 +50,9 @@ SettingsPageGeneral::SettingsPageGeneral(QWidget *parent)
     m_hotkeysEnabled = addSwitchRow(startupForm,
                                     MS_TR("Global Hotkeys"),
                                     MS_TR("Register global capture shortcuts when the tray starts."));
-    layout->addWidget(startupCard);
+    layout->addWidget(startupOptions);
 
-    QFrame *hotkeyCard = createSettingsCard(MS_TR("Hotkeys"),
+    QFrame *hotkeyCard = createAdvancedSettingsCard(MS_TR("Hotkeys"),
                                             MS_TR("Use the desktop portal on supported Linux desktops and RegisterHotKey on Windows."),
                                             this);
     QFormLayout *hotkeyForm = settingsCardForm(hotkeyCard);

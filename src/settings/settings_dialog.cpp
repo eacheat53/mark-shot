@@ -18,20 +18,29 @@
 #include "ui/i18n.h"
 #include "ui/application_icon.h"
 #include "ui/icons.h"
+#include "ui/theme.h"
 #include "ui/interface_theme_config.h"
 
-#include <QDialogButtonBox>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QJsonObject>
 #include <QLabel>
-#include <QMessageBox>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QKeySequenceEdit>
+#include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QResizeEvent>
+#include <QScopedValueRollback>
 #include <QPointer>
 #include <QPushButton>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QScrollArea>
 #include <QStackedWidget>
+#include <QStyle>
 #include <QVBoxLayout>
 
 namespace markshot::settings {
@@ -69,8 +78,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     setObjectName(QStringLiteral("settingsDialog"));
     setWindowTitle(MS_TR("Settings"));
     setWindowIcon(markshot::ui::applicationIcon());
-    setMinimumSize(820, 600);
-    resize(900, 640);
+    setFont(markshot::theme::uiFont(10));
+    setMinimumSize(420, 400);
+    resize(860, 620);
 
     applyTheme(configuredSettingsThemeMode());
 
@@ -83,6 +93,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     auto *body = new QWidget(this);
     auto *bodyLayout = new QHBoxLayout(body);
+    m_bodyLayout = bodyLayout;
     bodyLayout->setContentsMargins(0, 0, 0, 0);
     bodyLayout->setSpacing(0);
 
@@ -120,37 +131,42 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     auto *footer = new QFrame(this);
     footer->setObjectName(QStringLiteral("settingsFooter"));
     auto *footerLayout = new QHBoxLayout(footer);
-    footerLayout->setContentsMargins(18, 10, 18, 10);
-    m_statusLabel = new QLabel(MS_TR("Some changes take effect after restarting Mark Shot."), footer);
+    footerLayout->setContentsMargins(16, 10, 16, 10);
+    footerLayout->setSpacing(8);
+    m_revertButton = new QPushButton(MS_TR("Undo changes"), footer);
+    m_revertButton->setObjectName(QStringLiteral("settingsRevert"));
+    m_revertButton->setProperty("role", QStringLiteral("quiet"));
+    m_revertButton->setAutoDefault(false);
+    m_revertButton->setEnabled(false);
+    footerLayout->addWidget(m_revertButton);
+    m_statusLabel = new QLabel(footer);
     m_statusLabel->setObjectName(QStringLiteral("settingsStatus"));
+    m_statusLabel->setWordWrap(true);
+    m_statusLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     footerLayout->addWidget(m_statusLabel, 1);
-    auto *buttons = new QDialogButtonBox(footer);
-    QPushButton *applyButton = buttons->addButton(MS_TR("Apply"), QDialogButtonBox::ApplyRole);
-    QPushButton *saveButton = buttons->addButton(MS_TR("Save"), QDialogButtonBox::AcceptRole);
-    QPushButton *cancelButton = buttons->addButton(MS_TR("Cancel"), QDialogButtonBox::RejectRole);
-    saveButton->setProperty("role", QStringLiteral("primary"));
-    footerLayout->addWidget(buttons);
+    auto *closeButton = new QPushButton(MS_TR("Close"), footer);
+    closeButton->setProperty("role", QStringLiteral("quiet"));
+    closeButton->setAutoDefault(false);
+    footerLayout->addWidget(closeButton);
+    m_saveButton = new QPushButton(MS_TR("Save"), footer);
+    m_saveButton->setObjectName(QStringLiteral("settingsSave"));
+    m_saveButton->setProperty("role", QStringLiteral("primary"));
+    // 1. 【设置】【键盘保存】输入框中的 Enter 只执行保存，避免触发关闭或撤销
+    m_saveButton->setDefault(true);
+    m_saveButton->setEnabled(false);
+    footerLayout->addWidget(m_saveButton);
     rootLayout->addWidget(footer);
 
-    // 1. 导航切换驱动内容栈翻页
+    // 1. 【设置】【导航】切换分类时保留各页尚未保存的输入
     connect(m_navigation, &SettingsNavigation::navigationChanged, m_stack, &QStackedWidget::setCurrentIndex);
-    // 2. 底部按钮：应用 / 保存 / 取消
-    connect(applyButton, &QPushButton::clicked, this, [this] { saveConfig(false); });
-    connect(saveButton, &QPushButton::clicked, this, [this] { saveConfig(true); });
-    connect(cancelButton, &QPushButton::clicked, this, &QDialog::close);
-
-    // 3. "集成"页与"插件"页双向同步 OCR 与翻译服务商选择
-    connect(m_integrationsPage, &SettingsPageIntegrations::translationProviderChanged,
-            m_pluginsPage, &SettingsPagePlugins::setTranslationProvider);
-    connect(m_pluginsPage, &SettingsPagePlugins::translationProviderChanged,
-            m_integrationsPage, &SettingsPageIntegrations::setTranslationProvider);
-    connect(m_integrationsPage, &SettingsPageIntegrations::ocrProviderChanged,
-            m_pluginsPage, &SettingsPagePlugins::setOcrProvider);
-    connect(m_pluginsPage, &SettingsPagePlugins::ocrProviderChanged,
-            m_integrationsPage, &SettingsPageIntegrations::setOcrProvider);
+    // 2. 【设置】【保存与撤销】反馈保留在操作栏，撤销回到最近一次保存的配置
+    connect(m_saveButton, &QPushButton::clicked, this, &SettingsDialog::saveConfig);
+    connect(m_revertButton, &QPushButton::clicked, this, &SettingsDialog::revertChanges);
+    connect(closeButton, &QPushButton::clicked, this, &QDialog::close);
 
     m_navigation->setCurrentLogicalRow(0);
     loadConfig();
+    trackSettingChanges();
 }
 
 void SettingsDialog::loadConfig()
@@ -159,13 +175,14 @@ void SettingsDialog::loadConfig()
     m_config = readSettingsConfig(&error);
     applyConfigToPages(m_config);
     if (!error.isEmpty()) {
-        m_statusLabel->setText(error);
+        setStatus(error, true);
     }
     applyTheme(m_config.general.uiThemeMode);
 }
 
 void SettingsDialog::applyConfigToPages(const SettingsConfig &config)
 {
+    const QScopedValueRollback<bool> applying(m_applyingConfig, true);
     m_generalPage->setConfig(config);
     m_capturePage->setConfig(config);
     m_shortcutsPage->setConfig(config);
@@ -176,6 +193,9 @@ void SettingsDialog::applyConfigToPages(const SettingsConfig &config)
     m_scrollPage->setConfig(config);
     m_storagePage->setConfig(config);
     m_advancedPage->setConfig(config);
+    m_savedValues = settingsConfigToJson(collectConfig());
+    m_revertButton->setEnabled(false);
+    m_saveButton->setEnabled(false);
 }
 
 SettingsConfig SettingsDialog::collectConfig() const
@@ -194,23 +214,21 @@ SettingsConfig SettingsDialog::collectConfig() const
     return config;
 }
 
-void SettingsDialog::saveConfig(bool closeAfterSave)
+void SettingsDialog::saveConfig()
 {
     SettingsConfig nextConfig = collectConfig();
     QString error;
     if (!writeSettingsConfig(nextConfig, &error)) {
-        QMessageBox::critical(this, MS_TR("Settings"), MS_TR("Failed to save settings: %1").arg(error));
+        setStatus(MS_TR("Failed to save settings: %1").arg(error), true);
         return;
     }
 
     m_config = nextConfig;
-    // 刷新各页"已保存"基线，保证 Apply 后"还原配置"还原的是刚保存的值。
+    // 1. 【设置】【保存基线】撤销修改恢复到刚保存的值
     applyConfigToPages(nextConfig);
     applyTheme(m_config.general.uiThemeMode);
-    m_statusLabel->setText(MS_TR("Settings saved. Some changes take effect after restarting Mark Shot."));
-    if (closeAfterSave) {
-        close();
-    }
+    setStatus(MS_TR("Changes saved"));
+    m_statusLabel->setToolTip(MS_TR("Some changes take effect after restarting Mark Shot."));
 }
 
 void SettingsDialog::applyTheme(markshot::ui::UiThemeMode mode)
@@ -218,6 +236,81 @@ void SettingsDialog::applyTheme(markshot::ui::UiThemeMode mode)
     const markshot::ui::UiThemeMode effectiveMode = markshot::ui::effectiveUiThemeMode(mode);
     qApp->setPalette(tokens::settingsPalette(effectiveMode));
     setStyleSheet(tokens::settingsStyleSheet(effectiveMode));
+}
+
+void SettingsDialog::resizeEvent(QResizeEvent *event)
+{
+    QDialog::resizeEvent(event);
+    if (m_navigation && m_bodyLayout) {
+        const bool compact = width() < 720;
+        m_navigation->setCompact(compact);
+        m_bodyLayout->setDirection(compact ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+    }
+}
+
+void SettingsDialog::trackSettingChanges()
+{
+    for (QLineEdit *edit : m_stack->findChildren<QLineEdit *>()) {
+        if (!edit->isReadOnly()) {
+            connect(edit, &QLineEdit::textChanged, this, &SettingsDialog::markSettingsChanged);
+        }
+    }
+    for (QPlainTextEdit *edit : m_stack->findChildren<QPlainTextEdit *>()) {
+        if (!edit->isReadOnly()) {
+            connect(edit, &QPlainTextEdit::textChanged, this, &SettingsDialog::markSettingsChanged);
+        }
+    }
+    for (QComboBox *combo : m_stack->findChildren<QComboBox *>()) {
+        connect(combo, &QComboBox::currentIndexChanged, this, &SettingsDialog::markSettingsChanged);
+    }
+    for (QCheckBox *box : m_stack->findChildren<QCheckBox *>()) {
+        connect(box, &QCheckBox::toggled, this, &SettingsDialog::markSettingsChanged);
+    }
+    for (QSpinBox *spin : m_stack->findChildren<QSpinBox *>()) {
+        connect(spin, &QSpinBox::valueChanged, this, &SettingsDialog::markSettingsChanged);
+    }
+    for (QDoubleSpinBox *spin : m_stack->findChildren<QDoubleSpinBox *>()) {
+        connect(spin, &QDoubleSpinBox::valueChanged, this, &SettingsDialog::markSettingsChanged);
+    }
+    for (QKeySequenceEdit *edit : m_stack->findChildren<QKeySequenceEdit *>()) {
+        connect(edit, &QKeySequenceEdit::keySequenceChanged, this, &SettingsDialog::markSettingsChanged);
+    }
+    for (QPushButton *button : m_stack->findChildren<QPushButton *>()) {
+        connect(button, &QPushButton::clicked, this, &SettingsDialog::markSettingsChanged);
+    }
+}
+
+void SettingsDialog::markSettingsChanged()
+{
+    if (m_applyingConfig) {
+        return;
+    }
+    // 1. 【设置】【变更反馈】仅比较可保存的配置值，排除下载和按钮文案等独立状态
+    const bool wasModified = m_saveButton->isEnabled();
+    const bool modified = settingsConfigToJson(collectConfig()) != m_savedValues;
+    m_revertButton->setEnabled(modified);
+    m_saveButton->setEnabled(modified);
+    if (modified) {
+        setStatus(MS_TR("Unsaved changes"));
+    } else if (wasModified) {
+        setStatus({});
+    }
+}
+
+void SettingsDialog::setStatus(const QString &text, bool error)
+{
+    m_statusLabel->setText(text);
+    m_statusLabel->setToolTip(text);
+    m_statusLabel->setProperty("tone", error ? QStringLiteral("error") : QString());
+    m_statusLabel->style()->unpolish(m_statusLabel);
+    m_statusLabel->style()->polish(m_statusLabel);
+}
+
+void SettingsDialog::revertChanges()
+{
+    applyConfigToPages(m_config);
+    applyTheme(m_config.general.uiThemeMode);
+    setStatus(MS_TR("Changes reverted"));
 }
 
 void showSettingsDialog(QWidget *parent)

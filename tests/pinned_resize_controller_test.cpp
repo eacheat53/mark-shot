@@ -1,11 +1,27 @@
 #include "pinned_window/pinned_resize_controller.h"
+#include "pinned_window/pinned_native_resize.h"
 
+#include <QWidget>
 #include <QtTest/QtTest>
 
 class PinnedResizeControllerTest : public QObject {
     Q_OBJECT
 
 private slots:
+    /// @brief 开放原生缩放时保持小图片的初始尺寸
+    /// @return 无返回值
+    void nativeResizeKeepsSmallInitialImage()
+    {
+        QWidget window;
+        window.setFixedSize(12, 8);
+
+        markshot::shot::PinnedNativeResize controller(&window, {});
+
+        QCOMPARE(window.size(), QSize(12, 8));
+        QVERIFY(window.maximumWidth() > window.width());
+        QVERIFY(window.maximumHeight() > window.height());
+    }
+
     void hitTestFindsCornersBeforeEdges()
     {
         const QRectF rect(0, 0, 200, 100);

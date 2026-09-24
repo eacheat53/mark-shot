@@ -51,6 +51,13 @@ Mark Shot 在 Linux 上从 `~/.config/mark-shot/config.json` 读取应用配置�
       }
     }
   },
+  "captureHistory": {
+    "enabled": true,
+    "limit": 50
+  },
+  "ocrResultWindow": {
+    "alwaysOnTop": false
+  },
   "shortcuts": {
     "tools": {
       "pen": "P",
@@ -175,7 +182,10 @@ Mark Shot 在 Linux 上从 `~/.config/mark-shot/config.json` 读取应用配置�
 | `capture.hideOwnWindows` | 布尔值 | `true` | 控制截图后端是否从冻结画面中排除 Mark Shot 自身窗口。截图设置页的开关会在下一次截图时立即生效，不需要重启应用。别名：`screenshot.hideOwnWindowsDuringCapture`。 |
 | `capture.wayland.kde.kwinScreenshot.enabled` | 布尔值 | `true` | 是否在 KDE Wayland 环境下启用 KWin 的 `org.kde.KWin.ScreenShot2` 限制级别 DBus 接口截屏功能。如果关闭，将自动回退到常规 Portal 截屏。 |
 | `capture.doubleClickAction` | 字符串 | `"copy"` | 在选区内空白处双击时执行的动作，用于免去移动到工具栏按钮的往返。支持的值包括：`none`（保持旧行为，不执行动作）、`copy`（复制到剪贴板并关闭）、`save`（保存到已配置目录并关闭）、`save-as`（打开另存为对话框）、`pin`（把选区钉到屏幕）、`cancel`（放弃本次截图）。双击文本标注仍然进入文字编辑，Select 工具双击折线仍然插入锚点。该字段填 `false` 同样表示关闭手势。可在设置截图页配置。 |
-| `capture.selectionLoupe.enabled` | 布尔 | `false` | 框选时是否显示光标旁放大镜，并用方向键微调指针。默认关闭。Wayland 无法移动系统光标时会隐藏系统指针并绘制软件十字光标，点击与拖选用该逻辑位置。可在设置截图页配置。也可写成 `capture.selectionLoupeEnabled`。 |
+| `capture.selectionLoupe.enabled` | 布尔 | `false` | 创建、移动和缩放选区时显示光标旁放大镜，并在首次框选时启用方向键指针微调。已有选区在移动工具下始终支持方向键调整。Wayland 无法移动系统光标时使用软件十字光标。可在设置截图页配置，也可写成 `capture.selectionLoupeEnabled`。 |
+| `captureHistory.enabled` | 布尔 | `true` | 自动记录截图编辑器完成复制、保存、另存为和钉图时的图像。可在截图历史窗口切换；关闭后保留已有记录。 |
+| `captureHistory.limit` | 整数 | `50` | 历史截图保留数量，限制为 1 至 200。总容量固定不超过 256 MiB，保存新记录时按需删除最早的截图。 |
+| `ocrResultWindow.alwaysOnTop` | 布尔 | `false` | 控制独立 OCR 结果窗口置顶，不继承 `pinnedWindow.alwaysOnTop`。OCR 置顶按钮会保存此设置。关闭时支持正常的 niri 窗口检测和窗口规则。 |
 | `debug.enabled` | 布尔值 | `false` | 在 Linux 和 Windows 上启用调试日志。命令行参数 `--debug` / `--no-debug` 会覆盖此项；除非设置 `--no-debug`，否则 `DEBUG=1` 仍会启用日志。 |
 | `debug.logPath` | 字符串 | 系统临时目录 `mark-shot-scroll.log` | 调试日志输出路径。命令行参数 `--debug-log` 会覆盖此项；未设置配置或命令行路径时，`MARK_SHOT_DEBUG_LOG` 仍然有效。 |
 | `annotation.defaultTool` | 字符串 | `"move"` | 选区完成后默认激活的标注工具。支持的值包括：`move`、`select`、`pen`、`line`、`highlighter`、`rectangle`、`ellipse`、`arrow`、`text`、`number`、`mosaic`、`magnifier`、`laser`。命令行参数 `--default-tool` 会覆盖此项。 |
@@ -202,7 +212,7 @@ Mark Shot 在 Linux 上从 `~/.config/mark-shot/config.json` 读取应用配置�
 | `upload.command` | 字符串 | `""` | 自定义图床上传命令。支持 `{image}`、`{imagePath}` 和 `{imageUrl}` 占位符；如果没有占位符，Mark Shot 会把临时 PNG 路径追加到命令末尾。命令必须输出 JSON `{"url":"...","deleteUrl":"...","errors":[]}` 或纯文本 URL（以 `http://`/`https://` 开头）。留空时使用内置 `mark-shot-upload` 脚本，通过 `upload.env` 配置图床参数。别名：`imageUpload.command`、`uploader.command`、`imageHost.command`。 |
 | `upload.timeoutMs` | 数值 | `60000` | 上传命令超时时间。环境变量 `MARK_SHOT_UPLOAD_TIMEOUT_MS` 可以覆盖该值。 |
 | `upload.env` | 对象 | `{}` | 传递给上传命令的环境变量。会合并到系统环境变量之上。用于配置内置 `mark-shot-upload` 脚本的图床参数（端点、字段、API Key、认证方案、URL 提取路径等）。别名：`environment`、`envVars`、`variables`。 |
-| `pinnedWindow.autoOcr` | 布尔值 | `false` | 控制贴图窗口创建后是否立即在后台自动启动 OCR 文本识别。如果禁用，则仅在右键菜单中触发复制文字或翻译时按需识别。别名：`pinned`、`pin`。 |
+| `pinnedWindow.autoOcr` | 布尔值 | `false` | 控制贴图窗口创建后是否立即在后台自动启动 OCR 文本识别。如果禁用，则在首次拖选文字、复制文字或翻译时按需识别。首次拖选会等待文字位置就绪，并保留按下到释放的选区。别名：`pinned`、`pin`。 |
 | `pinnedWindow.alwaysOnTop` | 布尔值 | `true` | 控制钉图窗口是否保持在其他窗口之上。右键菜单可切换该值并写回 `config.json`。GNOME Wayland 在辅助扩展可用时走扩展接口。KDE Plasma Wayland 通过会话内 KWin 脚本设置 `keepAbove`，不改用 layer-shell。 |
 | `pinnedWindow.border` | 布尔值/对象 | `true` | 贴图窗口外边框的配置。可以为布尔值，或者包含 `enabled` (布尔值)、`color` (十六进制/名称/RGBA对象) 和 `width` (浮点数，`1.0` - `12.0`) 的配置对象。也支持 `borderEnabled`、`borderColor`、`borderWidth` 平铺配置。 |
 | `scrollCapture.frame` | 布尔值/数值/对象 | `5` | 滚动截图外框偏移。数值表示实际捕获区域和外框之间的像素间距；`false` 关闭外框。对象形式支持 `enabled` 和 `gap`。别名：`captureFrame`、`border`、`outline`，也支持平铺的 `frameEnabled` / `frameGap`。 |

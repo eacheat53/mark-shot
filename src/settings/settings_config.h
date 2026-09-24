@@ -11,6 +11,7 @@
 #include "ui/interface_theme_config.h"
 
 #include <QColor>
+#include <QJsonObject>
 #include <QKeySequence>
 #include <QMap>
 #include <QString>
@@ -135,6 +136,12 @@ struct SettingsConfig {
 /// @param error 读取失败时输出错误信息。
 /// @return 当前配置与默认值合并后的设置结构。
 SettingsConfig readSettingsConfig(QString *error = nullptr);
+
+/// @brief 将可编辑设置转换为 JSON 值，用于保存或比较，不读写配置文件
+/// @param config 需要转换的设置结构
+/// @param root 需要保留其他字段的原始配置对象，默认创建空对象
+/// @return 合并设置后的配置对象
+QJsonObject settingsConfigToJson(const SettingsConfig &config, QJsonObject root = {});
 
 /// @brief 保存设置界面修改后的应用配置。
 /// @param config 需要保存的设置结构。

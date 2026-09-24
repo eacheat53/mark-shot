@@ -2,6 +2,7 @@
 
 #include "selection_cursor_nudge.h"
 #include "selection_loupe.h"
+#include "capture_history/history_window.h"
 
 #include <algorithm>
 #include <optional>
@@ -64,7 +65,7 @@ qreal annotationWidthWheelStepSize(ShotWindow::Tool tool)
  */
 void ShotWindow::wheelEvent(QWheelEvent *event)
 {
-    if (m_mode == Mode::Selecting
+    if ((m_mode == Mode::Selecting || (canAdjustSelection() && m_dragging))
         && m_startupTool != StartupTool::Ruler
         && (m_selectionLoupeEnabled || m_startupTool == StartupTool::ColorPicker)) {
         const int delta = event->angleDelta().y() != 0 ? event->angleDelta().y() : event->pixelDelta().y();
@@ -86,6 +87,12 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
         return;
     }
 
+    // 1. 【标注】【滚轮输入】正在绘制或拖动时保持当前操作，避免预览覆盖抓取光标
+    if (m_dragging || m_imagePanning || m_toolbarDragging || m_startupRulerDragging) {
+        event->accept();
+        return;
+    }
+
     const qreal steps = annotationWidthWheelSteps(event);
     if (qFuzzyIsNull(steps) || m_mode != Mode::Editing) {
         QWidget::wheelEvent(event);
@@ -102,12 +109,8 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
             return;
         }
         zoomImageAt(factor, event->position());
-        m_showWheelPreview = true;
-        m_wheelPreviewPosition = event->position();
-        m_wheelPreviewTimer.restart();
-        updateCursor();
+        startWheelPreview(event->position(), WheelPreview::ImageZoom);
         event->accept();
-        update();
         return;
     }
 
@@ -141,12 +144,8 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
         queueAnnotationWidthWheelHistory(wheelContext, historyBeforeChange);
     }
 
-    m_showWheelPreview = true;
-    m_wheelPreviewPosition = event->position();
-    m_wheelPreviewTimer.restart();
-    updateCursor();
+    startWheelPreview(event->position(), WheelPreview::ToolSize);
     event->accept();
-    update();
 }
 
 /**
@@ -157,6 +156,17 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
 void ShotWindow::keyPressEvent(QKeyEvent *event)
 {
     clearWheelPreview();
+
+    if (handleSelectionAdjustmentKey(event)) {
+        return;
+    }
+
+    if (event->key() == Qt::Key_H && event->modifiers() == Qt::ControlModifier && !m_dragging) {
+        markshot::history::showHistoryWindow();
+        close();
+        event->accept();
+        return;
+    }
 
     if (m_mode == Mode::Selecting && activeRecordingAvailable() && event->key() == Qt::Key_S) {
         stopActiveRecordingFromOverlay();

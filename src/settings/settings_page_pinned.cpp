@@ -54,16 +54,19 @@ SettingsPagePinned::SettingsPagePinned(QWidget *parent)
     QFormLayout *ocrForm = settingsCardForm(ocrCard);
     m_ocrEnabled = addSwitchRow(ocrForm, MS_TR("OCR Enabled"), MS_TR("Enable OCR actions for pinned images."));
     m_autoOcr = addSwitchRow(ocrForm, MS_TR("Auto OCR"), MS_TR("Recognize text automatically after pinning."));
-    m_ocrBackend = addTextRow(ocrForm, MS_TR("OCR Backend"), QStringLiteral("rapidocr"));
-    m_ocrCommand = addTextRow(ocrForm, MS_TR("OCR Command"), QStringLiteral("mark-shot-ocr {image}"));
-    m_ocrTimeoutMs = addSpinRow(ocrForm, MS_TR("OCR Timeout"), 1000, 300000, QStringLiteral(" ms"));
+    QFrame *advanced = createAdvancedSettingsCard(MS_TR("Recognition and translation options"), {}, this);
+    QFormLayout *advancedForm = settingsCardForm(advanced);
+    m_ocrBackend = addTextRow(advancedForm, MS_TR("OCR Backend"), QStringLiteral("rapidocr"));
+    m_ocrCommand = addTextRow(advancedForm, MS_TR("OCR Command"), QStringLiteral("mark-shot-ocr {image}"));
+    m_ocrTimeoutMs = addSpinRow(advancedForm, MS_TR("OCR Timeout"), 1000, 300000, QStringLiteral(" ms"));
     m_autoTranslate = addSwitchRow(ocrForm,
                                    MS_TR("Auto Translate"),
                                    MS_TR("Translate automatically after OCR completes."));
     m_targetLanguage = addTextRow(ocrForm, MS_TR("Target Language"), MS_TR("Simplified Chinese"));
-    m_translationCommand = addTextRow(ocrForm, MS_TR("Translation Command"), QStringLiteral("mark-shot-translate {input}"));
-    m_translationTimeoutMs = addSpinRow(ocrForm, MS_TR("Translation Timeout"), 1000, 300000, QStringLiteral(" ms"));
+    m_translationCommand = addTextRow(advancedForm, MS_TR("Translation Command"), QStringLiteral("mark-shot-translate {input}"));
+    m_translationTimeoutMs = addSpinRow(advancedForm, MS_TR("Translation Timeout"), 1000, 300000, QStringLiteral(" ms"));
     layout->addWidget(ocrCard);
+    layout->addWidget(advanced);
     layout->addStretch();
 }
 

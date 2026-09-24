@@ -1,3 +1,26 @@
+mark-shot (0.1.53-0ppa1~resolute1) resolute; urgency=medium
+
+  * Stage plugin updates on Windows to prevent DLL overwrite locking conflicts.
+  * Trigger OCR on demand during the first text-selection gesture on pinned stickers.
+  * Align the screenshot history window with settings design tokens.
+  * Scale the capture crosshair cursor for HiDPI outputs.
+  * Unify OCR model directories and auto-refresh availability after downloads.
+  * Remove redundant Protobuf and Abseil dependencies from the RapidOCR plugin.
+  * Preserve native shell command quoting on Windows.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Mon, 21 Sep 2026 00:00:00 +0000
+
+mark-shot (0.1.52-0ppa1~resolute1) resolute; urgency=medium
+
+  * Redesign the OCR result window with separate text and translation panes.
+  * Streamline the recording dialog and settings form layouts.
+  * Scope the KDE pinned always-on-top KWin script to Mark Shot windows and
+    add native pinned resize with preserved aspect ratio.
+  * Stabilize Hyprland pinned image dragging with a live drag preview.
+  * Complete annotation interaction cursor states with width size preview.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Sun, 13 Sep 2026 00:00:00 +0000
+
 mark-shot (0.1.51-0ppa1~resolute1) resolute; urgency=medium
 
   * Cache capture-path environment and D-Bus probes for smoother scroll capture.

@@ -1,6 +1,49 @@
 #include "scroll/scroll_session_window_internal.h"
 
+#include <QCursor>
+#include <QEnterEvent>
+
 namespace markshot::scroll {
+
+void ScrollSessionWindow::updatePointerCursor(const QPoint &point)
+{
+    // 1. 【滚动截图】【区域握柄】按钮兼顾点击切换方向与按住移动区域
+    const bool grabbing = m_axisDragArmed || m_overviewDragging;
+    for (QPushButton *button : {m_axisButton, m_floatingAxisButton}) {
+        if (button) {
+            button->setCursor(!button->isEnabled() ? Qt::ArrowCursor
+                : m_axisDragArmed ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
+        }
+    }
+    if (grabbing) {
+        setCursor(Qt::ClosedHandCursor);
+        return;
+    }
+    if (floatingDragHandleActive() && floatingDragHandleLocalRect().contains(point)) {
+        setCursor(Qt::OpenHandCursor);
+        return;
+    }
+    // 2. 【滚动截图】【概览定位】仅可拖动的概览区域显示张开手型
+    if (m_previewPanelVisible) {
+        const PreviewLayout layout = computePreviewLayout();
+        if (layout.valid && layout.maxScrub > 0
+            && overviewTargetRect(layout, currentResult()).contains(point)) {
+            setCursor(Qt::OpenHandCursor);
+            return;
+        }
+    }
+    setCursor(Qt::ArrowCursor);
+}
+
+void ScrollSessionWindow::enterEvent(QEnterEvent *event)
+{
+    if (!(QGuiApplication::mouseButtons() & Qt::LeftButton)) {
+        finishAxisDrag();
+        m_overviewDragging = false;
+    }
+    updatePointerCursor(event->position().toPoint());
+    QWidget::enterEvent(event);
+}
 
 void ScrollSessionWindow::keyPressEvent(QKeyEvent *event)
 {
@@ -34,6 +77,10 @@ void ScrollSessionWindow::mousePressEvent(QMouseEvent *event)
 
 void ScrollSessionWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    if (!(event->buttons() & Qt::LeftButton)) {
+        finishAxisDrag();
+        m_overviewDragging = false;
+    }
     if (m_axisDragArmed && (event->buttons() & Qt::LeftButton)) {
         updateAxisDrag(event->globalPosition().toPoint());
         event->accept();
@@ -44,6 +91,7 @@ void ScrollSessionWindow::mouseMoveEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+    updatePointerCursor(event->position().toPoint());
     QWidget::mouseMoveEvent(event);
 }
 
@@ -64,7 +112,7 @@ void ScrollSessionWindow::mouseReleaseEvent(QMouseEvent *event)
         if (m_scrubPos >= layout.maxScrub) {
             m_following = true;
         }
-        unsetCursor();
+        updatePointerCursor(event->position().toPoint());
         update();
         event->accept();
         return;
@@ -107,6 +155,15 @@ bool ScrollSessionWindow::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched != m_axisButton && watched != m_floatingAxisButton) {
         return QWidget::eventFilter(watched, event);
+    }
+
+    auto *button = qobject_cast<QPushButton *>(watched);
+    if (event->type() == QEvent::Hide || event->type() == QEvent::UngrabMouse
+        || (event->type() == QEvent::EnabledChange && button && !button->isEnabled())) {
+        finishAxisDrag();
+    }
+    if (event->type() == QEvent::Enter || event->type() == QEvent::EnabledChange) {
+        updatePointerCursor(mapFromGlobal(QCursor::pos()));
     }
 
     const bool mouseEvent = event->type() == QEvent::MouseButtonPress

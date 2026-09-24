@@ -16,8 +16,8 @@ namespace markshot::recording::ui {
 namespace {
 
 // 控制条视觉常量，保持紧凑不喧宾夺主
-constexpr int kBarHeight = 36;
-constexpr int kCornerRadius = 10;
+constexpr int kBarHeight = 40;
+constexpr int kCornerRadius = 8;
 constexpr int kButtonSize = 26;
 constexpr int kIndicatorSize = 9;
 
@@ -75,6 +75,8 @@ RecordingControlBar::RecordingControlBar(QWidget *parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_TranslucentBackground, true);
+    setObjectName(QStringLiteral("recordingControlBar"));
+    setFont(markshot::theme::uiFont(10));
     setFixedHeight(kBarHeight);
     buildLayout();
     refreshPauseButton();
@@ -92,14 +94,22 @@ void RecordingControlBar::buildLayout()
     row->addWidget(m_indicator);
 
     m_elapsed = new QLabel(formatElapsed(0), this);
+    m_elapsed->setObjectName(QStringLiteral("recordingElapsed"));
     m_elapsed->setFont(markshot::theme::monospaceFont(11, QFont::DemiBold));
     m_elapsed->setStyleSheet(QStringLiteral("color: #f8fafc;"));
     m_elapsed->setMinimumWidth(52);
     row->addWidget(m_elapsed);
 
+    m_state = new QLabel(MS_TR("Recording"), this);
+    m_state->setObjectName(QStringLiteral("recordingState"));
+    m_state->setFont(markshot::theme::uiFont(9));
+    m_state->setStyleSheet(QStringLiteral("color: #CBD5E1;"));
+    row->addWidget(m_state);
+
     row->addSpacing(2);
 
     m_pause = new QToolButton(this);
+    m_pause->setObjectName(QStringLiteral("recordingPause"));
     m_pause->setFixedSize(kButtonSize, kButtonSize);
     m_pause->setStyleSheet(buttonStyleSheet());
     m_pause->setCursor(Qt::PointingHandCursor);
@@ -107,8 +117,13 @@ void RecordingControlBar::buildLayout()
     row->addWidget(m_pause);
 
     m_stop = new QToolButton(this);
-    m_stop->setFixedSize(kButtonSize, kButtonSize);
-    m_stop->setStyleSheet(buttonStyleSheet());
+    m_stop->setObjectName(QStringLiteral("recordingStop"));
+    m_stop->setFixedHeight(kButtonSize);
+    m_stop->setMinimumWidth(68);
+    m_stop->setText(MS_TR("Stop"));
+    m_stop->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_stop->setAccessibleName(MS_TR("Stop Recording"));
+    m_stop->setStyleSheet(buttonStyleSheet() + QStringLiteral("QToolButton { color: #F8FAFC; padding: 0 6px; }"));
     m_stop->setCursor(Qt::PointingHandCursor);
     m_stop->setIcon(makeRecordingStopIcon(QColor(248, 113, 113)));
     m_stop->setToolTip(MS_TR("Stop Recording"));
@@ -125,6 +140,7 @@ void RecordingControlBar::updateStatus(qint64 elapsedMs, bool paused)
         return;
     }
     m_paused = paused;
+    m_state->setText(m_paused ? MS_TR("Paused") : MS_TR("Recording"));
     if (m_indicator) {
         m_indicator->setStyleSheet(indicatorStyleSheet(m_paused));
     }
@@ -139,6 +155,7 @@ void RecordingControlBar::refreshPauseButton()
     const QColor ink(226, 232, 240);
     m_pause->setIcon(m_paused ? makeRecordingResumeIcon(ink) : makeRecordingPauseIcon(ink));
     m_pause->setToolTip(m_paused ? MS_TR("Resume Recording") : MS_TR("Pause Recording"));
+    m_pause->setAccessibleName(m_pause->toolTip());
 }
 
 void RecordingControlBar::paintEvent(QPaintEvent *event)

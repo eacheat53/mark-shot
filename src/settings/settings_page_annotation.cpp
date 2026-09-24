@@ -68,7 +68,7 @@ SettingsPageAnnotation::SettingsPageAnnotation(QWidget *parent)
     });
     layout->addWidget(defaultsCard);
 
-    QFrame *toolbarCard = createSettingsCard(MS_TR("Toolbar Appearance"),
+    QFrame *toolbarCard = createAdvancedSettingsCard(MS_TR("Toolbar Appearance"),
                                              MS_TR("Change compact toolbar sizes used in capture windows."),
                                              this);
     QFormLayout *toolbarForm = settingsCardForm(toolbarCard);

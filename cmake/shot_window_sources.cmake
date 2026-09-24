@@ -1,11 +1,11 @@
+include(cmake/ocr_result_window_sources.cmake)
+
 set(MARK_SHOT_WINDOW_SOURCES
+    ${MARK_SHOT_OCR_WINDOW_SOURCES}
     src/annotation_state_store.cpp
     src/annotation_state_store.h
-    src/ocr_result_window.cpp
-    src/ocr_result_window.h
-    src/ocr_result_window_geometry.cpp
-    src/ocr_result_window_geometry.h
-    src/ocr_result_window_translation.cpp
+    src/capture_cross_cursor.cpp
+    src/capture_cross_cursor.h
     src/shot_window.cpp
     src/shot_window.h
     src/shot_window_actions.cpp
@@ -19,6 +19,12 @@ set(MARK_SHOT_WINDOW_SOURCES
     src/shot_window_display_capture.cpp
     src/shot_window_double_click_action.cpp
     src/shot_window_hit_testing.cpp
+    src/shot_window_cursor.cpp
+    src/shot_window_cursor_preview.cpp
+    src/annotation_size_preview.cpp
+    src/annotation_size_preview.h
+    src/shot_window_pointer_events.cpp
+    src/shot_window_layer_shell.cpp
     src/shot_window_input.cpp
     src/shot_window_input_shortcuts.cpp
     src/shot_window_internal.cpp
@@ -38,10 +44,14 @@ set(MARK_SHOT_WINDOW_SOURCES
     src/shot_window_qt_fwd.h
     src/selection_cursor_nudge.cpp
     src/selection_cursor_nudge.h
+    src/selection_adjustment.cpp
+    src/selection_adjustment.h
     src/selection_loupe.cpp
     src/selection_loupe.h
     src/shot_window_selection_frame.cpp
     src/shot_window_selection_repaint.cpp
+    src/shot_window_selection_input.cpp
+    src/shot_window_selection_overlay.cpp
     src/shot_window_setup.cpp
     src/shot_window_shortcut_registration.cpp
     src/shot_window_shortcuts.cpp
@@ -52,7 +62,9 @@ set(MARK_SHOT_WINDOW_SOURCES
     src/shot_window_text_editor.cpp
     src/shot_window_text_layout.cpp
     src/shot_window_upload.cpp
+    src/shot_window_viewport_rendering.cpp
     src/shot_window_width_state.cpp
+    src/shot_window_types.h
     src/window_hover_selection.cpp
     src/window_hover_selection.h
 )
