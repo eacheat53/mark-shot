@@ -2,6 +2,8 @@
 
 #include <QString>
 
+#include <optional>
+
 namespace markshot::translate_gemini {
 
 struct GeminiTranslateConfig {
@@ -9,7 +11,10 @@ struct GeminiTranslateConfig {
     QString apiKey;
     QString model = QStringLiteral("gemini-3.5-flash-lite");
     QString systemPrompt;
-    double temperature = 0.2;
+    // 未配置时不下发，沿用模型默认温度（Gemini 3 系列文档推荐保持默认值）
+    std::optional<double> temperature;
+    // 未配置时不下发 thinkingConfig，各模型支持的档位不同，由模型默认值决定
+    QString thinkingLevel;
     int timeoutMs = 60000;
 };
 

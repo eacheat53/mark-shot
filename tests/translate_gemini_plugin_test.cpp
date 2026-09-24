@@ -115,7 +115,7 @@ QTemporaryFile *writeTempConfig(const QString &endpoint, const QString &apiKey =
     QJsonObject gemini;
     gemini.insert(QStringLiteral("endpoint"), endpoint);
     gemini.insert(QStringLiteral("apiKey"), apiKey);
-    gemini.insert(QStringLiteral("model"), QStringLiteral("gemini-1.5-flash"));
+    gemini.insert(QStringLiteral("model"), QStringLiteral("gemini-3.5-flash-lite"));
 
     QJsonObject translation;
     translation.insert(QStringLiteral("gemini"), gemini);
@@ -221,7 +221,44 @@ private slots:
         QVERIFY(root.contains(QStringLiteral("generationConfig")));
         QCOMPARE(root.value(QStringLiteral("generationConfig")).toObject().value(QStringLiteral("responseMimeType")).toString(),
                  QStringLiteral("application/json"));
-        QVERIFY(root.value(QStringLiteral("generationConfig")).toObject().contains(QStringLiteral("thinkingConfig")));
+        // 未显式配置时不下发 temperature 与 thinkingConfig，沿用模型默认值
+        QVERIFY(!root.value(QStringLiteral("generationConfig")).toObject().contains(QStringLiteral("thinkingConfig")));
+        QVERIFY(!root.value(QStringLiteral("generationConfig")).toObject().contains(QStringLiteral("temperature")));
+    }
+
+    void ignoresSharedOpenAiConfig()
+    {
+        // 公共 translation 节属于 OpenAI 兼容服务，不能被 Gemini 插件继承
+        std::unique_ptr<QTemporaryFile> file(new QTemporaryFile());
+        QVERIFY(file->open());
+        QJsonObject translation;
+        translation.insert(QStringLiteral("apiKey"), QStringLiteral("sk-openai"));
+        translation.insert(QStringLiteral("model"), QStringLiteral("gpt-4o-mini"));
+        file->write(QJsonDocument(QJsonObject{{QStringLiteral("translation"), translation}}).toJson());
+        file->flush();
+        EnvGuard configGuard(QByteArrayLiteral("MARK_SHOT_CONFIG"), file->fileName().toUtf8());
+        EnvGuard keyGuard(QByteArrayLiteral("GEMINI_API_KEY"), QByteArray());
+        EnvGuard markKeyGuard(QByteArrayLiteral("MARK_SHOT_GEMINI_API_KEY"), QByteArray());
+        EnvGuard modelGuard(QByteArrayLiteral("GEMINI_MODEL"), QByteArray());
+        EnvGuard markModelGuard(QByteArrayLiteral("MARK_SHOT_GEMINI_MODEL"), QByteArray());
+
+        const GeminiTranslateConfig config = readGeminiTranslateConfig();
+        QVERIFY(config.apiKey.isEmpty());
+        QCOMPARE(config.model, QStringLiteral("gemini-3.5-flash-lite"));
+    }
+
+    void sendsThinkingLevelWhenConfigured()
+    {
+        GeminiTranslateConfig config;
+        config.thinkingLevel = QStringLiteral("minimal");
+        config.temperature = 0.4;
+        const QJsonObject generation = QJsonDocument::fromJson(
+            buildGeminiPayload(config, {{0, QStringLiteral("Hello")}}, QString()))
+            .object().value(QStringLiteral("generationConfig")).toObject();
+        QCOMPARE(generation.value(QStringLiteral("thinkingConfig")).toObject()
+                     .value(QStringLiteral("thinkingLevel")).toString(),
+                 QStringLiteral("MINIMAL"));
+        QCOMPARE(generation.value(QStringLiteral("temperature")).toDouble(), 0.4);
     }
 
     void handlesApiErrorResponse()

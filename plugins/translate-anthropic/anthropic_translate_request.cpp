@@ -61,6 +61,10 @@ QUrl buildAnthropicUrl(QString endpoint)
     if (endpoint.endsWith(QStringLiteral("/messages"))) {
         return QUrl(endpoint);
     }
+    // 设置页占位符是不带版本号的 https://api.anthropic.com，此时补齐 /v1
+    if (!endpoint.endsWith(QStringLiteral("/v1")) && !endpoint.contains(QStringLiteral("/v1/"))) {
+        endpoint += QStringLiteral("/v1");
+    }
     return QUrl(endpoint + QStringLiteral("/messages"));
 }
 
@@ -88,7 +92,9 @@ QByteArray buildAnthropicPayload(const AnthropicTranslateConfig &config,
     QJsonObject payload;
     payload.insert(QStringLiteral("model"), config.model);
     payload.insert(QStringLiteral("max_tokens"), config.maxTokens);
-    payload.insert(QStringLiteral("temperature"), config.temperature);
+    if (config.temperature.has_value()) {
+        payload.insert(QStringLiteral("temperature"), *config.temperature);
+    }
     if (!config.systemPrompt.trimmed().isEmpty()) {
         payload.insert(QStringLiteral("system"), config.systemPrompt);
     }

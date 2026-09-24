@@ -2,6 +2,7 @@
 
 #include "translate_config_source.h"
 
+#include <QJsonValue>
 #include <QStringList>
 
 namespace markshot::translate_gemini {
@@ -36,16 +37,19 @@ QStringList endpointEnvNames()
     return {QStringLiteral("GEMINI_API_BASE"), QStringLiteral("MARK_SHOT_GEMINI_API_BASE")};
 }
 
-double configDouble(const TranslateConfigSource &source, const QString &key, double fallback)
+/**
+ * 读取厂商子节中显式配置的浮点数。
+ * @param source 配置来源。
+ * @param key 配置键名。
+ * @return 已配置且为数值时返回取值，否则返回空。
+ */
+std::optional<double> vendorDouble(const TranslateConfigSource &source, const QString &key)
 {
-    double value = fallback;
-    if (source.translation.contains(key)) {
-        value = source.translation.value(key).toDouble(value);
+    const QJsonValue value = source.vendor.value(key);
+    if (!value.isDouble()) {
+        return std::nullopt;
     }
-    if (source.vendor.contains(key)) {
-        value = source.vendor.value(key).toDouble(value);
-    }
-    return value;
+    return value.toDouble();
 }
 
 }  // namespace
@@ -61,8 +65,10 @@ QString defaultSystemPrompt()
 
 GeminiTranslateConfig readGeminiTranslateConfig()
 {
-    const TranslateConfigSource source =
+    TranslateConfigSource source =
         markshot::translate_common::readTranslateConfigSource(QStringLiteral("gemini"));
+    // 1. 只读 translation.gemini 子节：公共节的 apiKey/model/systemPrompt 属于 OpenAI 兼容服务
+    source.translation = QJsonObject();
 
     GeminiTranslateConfig result;
 
@@ -73,7 +79,8 @@ GeminiTranslateConfig readGeminiTranslateConfig()
                                                                    QStringLiteral("systemPrompt"),
                                                                    {},
                                                                    defaultSystemPrompt());
-    result.temperature = configDouble(source, QStringLiteral("temperature"), result.temperature);
+    result.temperature = vendorDouble(source, QStringLiteral("temperature"));
+    result.thinkingLevel = markshot::translate_common::configString(source, QStringLiteral("thinkingLevel"), {});
     result.timeoutMs = markshot::translate_common::configInt(source,
                                                              QStringLiteral("timeoutMs"),
                                                              result.timeoutMs,

@@ -115,7 +115,7 @@ QTemporaryFile *writeTempConfig(const QString &endpoint, const QString &apiKey =
     QJsonObject anthropic;
     anthropic.insert(QStringLiteral("endpoint"), endpoint);
     anthropic.insert(QStringLiteral("apiKey"), apiKey);
-    anthropic.insert(QStringLiteral("model"), QStringLiteral("claude-3-5-haiku-20241022"));
+    anthropic.insert(QStringLiteral("model"), QStringLiteral("claude-haiku-4-5"));
 
     QJsonObject translation;
     translation.insert(QStringLiteral("anthropic"), anthropic);
@@ -211,10 +211,22 @@ private slots:
         const QJsonDocument reqDoc = QJsonDocument::fromJson(server.requestBody());
         QVERIFY(reqDoc.isObject());
         const QJsonObject root = reqDoc.object();
-        QCOMPARE(root.value(QStringLiteral("model")).toString(), QStringLiteral("claude-3-5-haiku-20241022"));
+        QCOMPARE(root.value(QStringLiteral("model")).toString(), QStringLiteral("claude-haiku-4-5"));
         QVERIFY(root.contains(QStringLiteral("system")));
         QVERIFY(root.contains(QStringLiteral("messages")));
         QCOMPARE(root.value(QStringLiteral("max_tokens")).toInt(), 4096);
+        // 新模型拒绝 temperature，未显式配置时不能下发
+        QVERIFY(!root.contains(QStringLiteral("temperature")));
+    }
+
+    void appendsVersionToBareEndpoint()
+    {
+        QCOMPARE(buildAnthropicUrl(QStringLiteral("https://api.anthropic.com")),
+                 QUrl(QStringLiteral("https://api.anthropic.com/v1/messages")));
+        QCOMPARE(buildAnthropicUrl(QStringLiteral("https://api.anthropic.com/v1/")),
+                 QUrl(QStringLiteral("https://api.anthropic.com/v1/messages")));
+        QCOMPARE(buildAnthropicUrl(QStringLiteral("https://proxy.example/v1/messages")),
+                 QUrl(QStringLiteral("https://proxy.example/v1/messages")));
     }
 
     void handlesApiErrorResponse()

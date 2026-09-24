@@ -104,17 +104,17 @@ QByteArray buildGeminiPayload(const GeminiTranslateConfig &config,
                                                 QString::fromUtf8(QJsonDocument(userPrompt).toJson(QJsonDocument::Compact))}}}}}});
 
     QJsonObject generationConfig;
-    generationConfig.insert(QStringLiteral("temperature"), config.temperature);
+    if (config.temperature.has_value()) {
+        generationConfig.insert(QStringLiteral("temperature"), *config.temperature);
+    }
     generationConfig.insert(QStringLiteral("responseMimeType"), QStringLiteral("application/json"));
 
-    // 关闭 thinking 模式以实现极速响应并降低输出 token
-    QJsonObject thinkingConfig;
-    if (config.model.trimmed().toLower().contains(QStringLiteral("gemini-3"))) {
-        thinkingConfig.insert(QStringLiteral("thinkingLevel"), QStringLiteral("MINIMAL"));
-    } else {
-        thinkingConfig.insert(QStringLiteral("thinkingBudget"), 0);
+    // 仅在显式配置时下发思考档位：minimal 等取值并非所有模型都支持，错配会返回 400
+    if (!config.thinkingLevel.trimmed().isEmpty()) {
+        generationConfig.insert(QStringLiteral("thinkingConfig"),
+                                QJsonObject{{QStringLiteral("thinkingLevel"),
+                                             config.thinkingLevel.trimmed().toUpper()}});
     }
-    generationConfig.insert(QStringLiteral("thinkingConfig"), thinkingConfig);
 
     payload.insert(QStringLiteral("generationConfig"), generationConfig);
 

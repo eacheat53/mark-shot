@@ -2,15 +2,18 @@
 
 #include <QString>
 
+#include <optional>
+
 namespace markshot::translate_anthropic {
 
 struct AnthropicTranslateConfig {
     QString endpoint = QStringLiteral("https://api.anthropic.com/v1");
     QString apiKey;
-    QString model = QStringLiteral("claude-3-5-haiku-20241022");
+    QString model = QStringLiteral("claude-haiku-4-5");
     QString systemPrompt;
     int maxTokens = 4096;
-    double temperature = 0.2;
+    // 未配置时不下发：Opus 4.7 及更新的模型传入 temperature 会返回 400
+    std::optional<double> temperature;
     int timeoutMs = 60000;
 };
 

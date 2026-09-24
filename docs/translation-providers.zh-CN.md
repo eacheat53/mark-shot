@@ -70,7 +70,7 @@ Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力由 provide
     },
     "anthropic": {
       "apiKey": "",
-      "model": "claude-3-5-haiku-20241022",
+      "model": "claude-haiku-4-5",
       "endpoint": "https://api.anthropic.com/v1",
       "timeoutMs": 60000
     }
@@ -85,20 +85,28 @@ Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力由 provide
 | `apiKey` | `GEMINI_API_KEY`、`MARK_SHOT_GEMINI_API_KEY` | 无，必填 |
 | `model` | `GEMINI_MODEL`、`MARK_SHOT_GEMINI_MODEL` | `gemini-3.5-flash-lite` |
 | `endpoint` | `GEMINI_API_BASE`、`MARK_SHOT_GEMINI_API_BASE` | `https://generativelanguage.googleapis.com/v1beta` |
+| `systemPrompt` | 无 | 内置翻译提示词 |
+| `temperature` | 无 | 不下发，使用模型默认值 |
+| `thinkingLevel` | 无 | 不下发，使用模型默认值 |
 | `timeoutMs` | 无 | `60000` |
 
-插件直连 Google Gemini 原生 REST API（`:generateContent`），鉴权头为 `x-goog-api-key`，启用 `responseMimeType: "application/json"`。Google AI Studio 提供大额免费额度（15 RPM / 1500 RPD），适合个人低频免充值使用。
+插件直连 Google Gemini 原生 REST API（`:generateContent`），鉴权头为 `x-goog-api-key`，启用 `responseMimeType: "application/json"`。`thinkingLevel` 可取 `minimal`、`low`、`medium`、`high`，各模型支持的档位不同，因此只在显式配置时下发。
 
 ### Anthropic Claude
 
 | 字段 | 环境变量（按顺序） | 默认值 |
 | :--- | :--- | :--- |
 | `apiKey` | `ANTHROPIC_API_KEY`、`MARK_SHOT_ANTHROPIC_API_KEY` | 无，必填 |
-| `model` | `ANTHROPIC_MODEL`、`MARK_SHOT_ANTHROPIC_MODEL` | `claude-3-5-haiku-20241022` |
+| `model` | `ANTHROPIC_MODEL`、`MARK_SHOT_ANTHROPIC_MODEL` | `claude-haiku-4-5` |
 | `endpoint` | `ANTHROPIC_API_BASE`、`MARK_SHOT_ANTHROPIC_API_BASE` | `https://api.anthropic.com/v1` |
+| `systemPrompt` | 无 | 内置翻译提示词 |
+| `maxTokens` | 无 | `4096` |
+| `temperature` | 无 | 不下发，使用模型默认值 |
 | `timeoutMs` | 无 | `60000` |
 
-插件直连 Anthropic Messages API（`/v1/messages`），鉴权头为 `x-api-key` 与 `anthropic-version: 2023-06-01`。
+插件直连 Anthropic Messages API（`/v1/messages`），鉴权头为 `x-api-key` 与 `anthropic-version: 2023-06-01`。Claude Opus 4.7 及更新的模型不接受 `temperature`，因此该字段只在显式配置时下发。
+
+两个插件只读取各自的 `translation.gemini` / `translation.anthropic` 子节。公共节中的 `translation.apiKey`、`translation.model`、`translation.systemPrompt` 属于 OpenAI 兼容服务，不会被继承。
 
 ### 腾讯云机器翻译
 

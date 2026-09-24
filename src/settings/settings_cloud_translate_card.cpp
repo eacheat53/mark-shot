@@ -31,7 +31,7 @@ QFrame *createCloudTranslateCard(QWidget *parent, CloudTranslateCardWidgets *wid
 {
     QFrame *card = createAdvancedSettingsCard(
         MS_TR("Cloud Translation Credentials"),
-        MS_TR("Credentials for the Tencent, Baidu, and Youdao translation plugins. "
+        MS_TR("Credentials for the Tencent, Baidu, Youdao, Gemini, and Anthropic translation plugins. "
               "Leave a service empty to keep reading its credentials from environment variables."),
         parent);
     if (!widgets) {
@@ -70,7 +70,7 @@ QFrame *createCloudTranslateCard(QWidget *parent, CloudTranslateCardWidgets *wid
     widgets->anthropicApiKey =
         addSecretRow(form, MS_TR("Anthropic API Key"), QStringLiteral("ANTHROPIC_API_KEY"));
     widgets->anthropicModel =
-        addTextRow(form, MS_TR("Anthropic Model"), QStringLiteral("claude-3-5-haiku-20241022"));
+        addTextRow(form, MS_TR("Anthropic Model"), QStringLiteral("claude-haiku-4-5"));
     widgets->anthropicEndpoint =
         addTextRow(form, MS_TR("Anthropic Endpoint"), QStringLiteral("https://api.anthropic.com"));
     return card;
