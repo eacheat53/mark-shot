@@ -6,6 +6,7 @@
 #include <QFormLayout>
 #include <QFrame>
 #include <QLineEdit>
+#include <QPlainTextEdit>
 
 namespace markshot::settings {
 namespace {
@@ -61,7 +62,7 @@ QFrame *createCloudTranslateCard(QWidget *parent, CloudTranslateCardWidgets *wid
     widgets->geminiApiKey =
         addSecretRow(form, MS_TR("Gemini API Key"), QStringLiteral("GEMINI_API_KEY"));
     widgets->geminiModel =
-        addTextRow(form, MS_TR("Gemini Model"), QStringLiteral("gemini-2.5-flash"));
+        addTextRow(form, MS_TR("Gemini Model"), QStringLiteral("gemini-3.5-flash-lite"));
     widgets->geminiEndpoint =
         addTextRow(form, MS_TR("Gemini Endpoint"), QStringLiteral("https://generativelanguage.googleapis.com"));
 
@@ -108,6 +109,9 @@ void applyCloudTranslateSettings(const CloudTranslateCardWidgets &widgets,
     if (widgets.geminiEndpoint) {
         widgets.geminiEndpoint->setText(settings.geminiEndpoint);
     }
+    if (widgets.geminiSystemPrompt) {
+        widgets.geminiSystemPrompt->setPlainText(settings.geminiSystemPrompt);
+    }
     if (widgets.anthropicApiKey) {
         widgets.anthropicApiKey->setText(settings.anthropicApiKey);
     }
@@ -116,6 +120,9 @@ void applyCloudTranslateSettings(const CloudTranslateCardWidgets &widgets,
     }
     if (widgets.anthropicEndpoint) {
         widgets.anthropicEndpoint->setText(settings.anthropicEndpoint);
+    }
+    if (widgets.anthropicSystemPrompt) {
+        widgets.anthropicSystemPrompt->setPlainText(settings.anthropicSystemPrompt);
     }
 }
 
@@ -155,6 +162,9 @@ void collectCloudTranslateSettings(const CloudTranslateCardWidgets &widgets,
     if (widgets.geminiEndpoint) {
         settings->geminiEndpoint = widgets.geminiEndpoint->text().trimmed();
     }
+    if (widgets.geminiSystemPrompt) {
+        settings->geminiSystemPrompt = widgets.geminiSystemPrompt->toPlainText().trimmed();
+    }
     if (widgets.anthropicApiKey) {
         settings->anthropicApiKey = widgets.anthropicApiKey->text().trimmed();
     }
@@ -163,6 +173,9 @@ void collectCloudTranslateSettings(const CloudTranslateCardWidgets &widgets,
     }
     if (widgets.anthropicEndpoint) {
         settings->anthropicEndpoint = widgets.anthropicEndpoint->text().trimmed();
+    }
+    if (widgets.anthropicSystemPrompt) {
+        settings->anthropicSystemPrompt = widgets.anthropicSystemPrompt->toPlainText().trimmed();
     }
 }
 

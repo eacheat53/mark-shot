@@ -4,6 +4,7 @@
 
 class QFrame;
 class QLineEdit;
+class QPlainTextEdit;
 class QWidget;
 
 namespace markshot::settings {
@@ -22,9 +23,11 @@ struct CloudTranslateCardWidgets {
     QLineEdit *geminiApiKey = nullptr;
     QLineEdit *geminiModel = nullptr;
     QLineEdit *geminiEndpoint = nullptr;
+    QPlainTextEdit *geminiSystemPrompt = nullptr;
     QLineEdit *anthropicApiKey = nullptr;
     QLineEdit *anthropicModel = nullptr;
     QLineEdit *anthropicEndpoint = nullptr;
+    QPlainTextEdit *anthropicSystemPrompt = nullptr;
 };
 
 /**

@@ -64,7 +64,7 @@ Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力由 provide
     },
     "gemini": {
       "apiKey": "",
-      "model": "gemini-2.5-flash",
+      "model": "gemini-3.5-flash-lite",
       "endpoint": "https://generativelanguage.googleapis.com/v1beta",
       "timeoutMs": 60000
     },
@@ -83,7 +83,7 @@ Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力由 provide
 | 字段 | 环境变量（按顺序） | 默认值 |
 | :--- | :--- | :--- |
 | `apiKey` | `GEMINI_API_KEY`、`MARK_SHOT_GEMINI_API_KEY` | 无，必填 |
-| `model` | `GEMINI_MODEL`、`MARK_SHOT_GEMINI_MODEL` | `gemini-2.5-flash` |
+| `model` | `GEMINI_MODEL`、`MARK_SHOT_GEMINI_MODEL` | `gemini-3.5-flash-lite` |
 | `endpoint` | `GEMINI_API_BASE`、`MARK_SHOT_GEMINI_API_BASE` | `https://generativelanguage.googleapis.com/v1beta` |
 | `timeoutMs` | 无 | `60000` |
 

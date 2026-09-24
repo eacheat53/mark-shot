@@ -221,6 +221,7 @@ private slots:
         QVERIFY(root.contains(QStringLiteral("generationConfig")));
         QCOMPARE(root.value(QStringLiteral("generationConfig")).toObject().value(QStringLiteral("responseMimeType")).toString(),
                  QStringLiteral("application/json"));
+        QVERIFY(root.value(QStringLiteral("generationConfig")).toObject().contains(QStringLiteral("thinkingConfig")));
     }
 
     void handlesApiErrorResponse()

@@ -120,9 +120,17 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
     m_cloudTranslate.geminiApiKey =
         addSecretRow(geminiForm, MS_TR("Gemini API Key"), QStringLiteral("GEMINI_API_KEY"));
     m_cloudTranslate.geminiModel =
-        addTextRow(geminiForm, MS_TR("Gemini Model"), QStringLiteral("gemini-2.5-flash"));
+        addTextRow(geminiForm, MS_TR("Gemini Model"), QStringLiteral("gemini-3.5-flash-lite"));
+    const QString defaultPromptPlaceholder = QStringLiteral(
+        "You are a professional native translator. Fluently translate OCR text segments into the target language. "
+        "Preserve original meaning, keep segment count and ids unchanged. "
+        "Keep proper nouns, brand names, code snippets, formulas, and numbers intact. "
+        "Return only valid JSON without extra text or explanations.");
+
     m_cloudTranslate.geminiEndpoint =
         addTextRow(geminiForm, MS_TR("Gemini Endpoint"), QStringLiteral("https://generativelanguage.googleapis.com"));
+    m_cloudTranslate.geminiSystemPrompt =
+        addPlainTextRow(geminiForm, MS_TR("System Prompt"), defaultPromptPlaceholder);
     m_translationTabs->addTab(geminiTab, QStringLiteral("Google Gemini"));
 
     // Tab 2: OpenAI 兼容
@@ -137,9 +145,7 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
                                         MS_TR("API Key Environment"),
                                         QStringLiteral("OPENAI_API_KEY"));
     m_translationTemperature = addDoubleRow(openaiForm, MS_TR("Temperature"), 0.0, 2.0, 2);
-    m_translationSystemPrompt = addPlainTextRow(openaiForm,
-                                                MS_TR("System Prompt"),
-                                                MS_TR("Optional translation system prompt."));
+    m_translationSystemPrompt = addPlainTextRow(openaiForm, MS_TR("System Prompt"), defaultPromptPlaceholder);
     m_translationTabs->addTab(openaiTab, MS_TR("OpenAI Compatible"));
 
     // Tab 3: Anthropic Claude
@@ -151,6 +157,8 @@ SettingsPageIntegrations::SettingsPageIntegrations(QWidget *parent)
         addTextRow(anthropicForm, MS_TR("Anthropic Model"), QStringLiteral("claude-3-5-haiku-20241022"));
     m_cloudTranslate.anthropicEndpoint =
         addTextRow(anthropicForm, MS_TR("Anthropic Endpoint"), QStringLiteral("https://api.anthropic.com"));
+    m_cloudTranslate.anthropicSystemPrompt =
+        addPlainTextRow(anthropicForm, MS_TR("System Prompt"), defaultPromptPlaceholder);
     m_translationTabs->addTab(anthropicTab, QStringLiteral("Anthropic Claude"));
 
     // Tab 4: 国内云厂商 (腾讯 / 百度 / 有道)

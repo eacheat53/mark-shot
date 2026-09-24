@@ -106,6 +106,16 @@ QByteArray buildGeminiPayload(const GeminiTranslateConfig &config,
     QJsonObject generationConfig;
     generationConfig.insert(QStringLiteral("temperature"), config.temperature);
     generationConfig.insert(QStringLiteral("responseMimeType"), QStringLiteral("application/json"));
+
+    // 关闭 thinking 模式以实现极速响应并降低输出 token
+    QJsonObject thinkingConfig;
+    if (config.model.trimmed().toLower().contains(QStringLiteral("gemini-3"))) {
+        thinkingConfig.insert(QStringLiteral("thinkingLevel"), QStringLiteral("MINIMAL"));
+    } else {
+        thinkingConfig.insert(QStringLiteral("thinkingBudget"), 0);
+    }
+    generationConfig.insert(QStringLiteral("thinkingConfig"), thinkingConfig);
+
     payload.insert(QStringLiteral("generationConfig"), generationConfig);
 
     return QJsonDocument(payload).toJson(QJsonDocument::Compact);

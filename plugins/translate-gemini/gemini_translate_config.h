@@ -7,7 +7,7 @@ namespace markshot::translate_gemini {
 struct GeminiTranslateConfig {
     QString endpoint = QStringLiteral("https://generativelanguage.googleapis.com/v1beta");
     QString apiKey;
-    QString model = QStringLiteral("gemini-2.5-flash");
+    QString model = QStringLiteral("gemini-3.5-flash-lite");
     QString systemPrompt;
     double temperature = 0.2;
     int timeoutMs = 60000;
