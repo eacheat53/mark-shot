@@ -36,8 +36,11 @@ private slots:
         QCOMPARE(image.size(), QSize(64 * resourceScale, 64 * resourceScale));
         QCOMPARE(pixmap.deviceIndependentSize(), QSizeF(64, 64));
         QCOMPARE(image.bytesPerLine() % 256, 0);
-        QCOMPARE(cursor.hotSpot(), QPoint(32 * resourceScale, 32 * resourceScale));
-        QVERIFY(image.rect().contains(cursor.hotSpot()));
+        // QCursor 的热点使用逻辑坐标（surface-local 坐标），应始终位于 64×64 逻辑画布中心 (32, 32)
+        const QSize logicalSize = pixmap.deviceIndependentSize().toSize();
+        QCOMPARE(cursor.hotSpot(), QPoint(32, 32));
+        QCOMPARE(cursor.hotSpot(), QPoint(logicalSize.width() / 2, logicalSize.height() / 2));
+        QVERIFY(image.rect().contains(cursor.hotSpot() * resourceScale));
     }
 
     /// @brief 提供整数与小数输出缩放，比较软硬件十字图案
@@ -59,7 +62,7 @@ private slots:
         actual.setDevicePixelRatio(resourceScale);
         actual.fill(Qt::transparent);
         QPainter painter(&actual);
-        drawSelectionPointer(painter, QPointF(cursor.hotSpot()) / resourceScale);
+        drawSelectionPointer(painter, QPointF(cursor.hotSpot()));
         painter.end();
         QCOMPARE(actual, expected);
     }

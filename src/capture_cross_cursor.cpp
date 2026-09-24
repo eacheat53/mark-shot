@@ -24,15 +24,15 @@ QCursor createCaptureCrossCursor(int resourceScale)
 {
     const int canvasSize = kLogicalCanvasSize * resourceScale;
     static_assert(kLogicalCanvasSize % kCanvasPixelAlignment == 0);
-    const QPoint hotspot(canvasSize / 2, canvasSize / 2);
+    const int logicalCenter = kLogicalCanvasSize / 2;
 
     QPixmap pixmap(canvasSize, canvasSize);
     pixmap.setDevicePixelRatio(resourceScale);
     pixmap.fill(Qt::transparent);
     QPainter painter(&pixmap);
-    drawCaptureCrossCursor(painter, QPointF(hotspot) / resourceScale);
+    drawCaptureCrossCursor(painter, QPointF(logicalCenter, logicalCenter));
     painter.end();
-    return QCursor(pixmap, hotspot.x(), hotspot.y());
+    return QCursor(pixmap, logicalCenter, logicalCenter);
 }
 
 }
